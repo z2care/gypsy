@@ -1,0 +1,17 @@
+<refentry id="why-not-gpsd">
+
+<refmeta>
+<refentrytitle>Design Flaws in GPSD</refentrytitle>
+</refmeta>
+
+<refnamediv>
+<refname>Design Flaws in GPSD</refname>
+<refpurpose>A discussion of design flaws in GPSD and how Gypsy is designed to fix them.</refpurpose>
+</refnamediv>
+
+<refsect1>
+<title>Why You Should Use Gypsy Over GPSD</title>
+<para>
+</para>
+</refsect1>
+</refentry>

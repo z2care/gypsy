@@ -1,0 +1,13 @@
+#include <gypsy/gypsy-accuracy.h>
+#include <gypsy/gypsy-control.h>
+#include <gypsy/gypsy-course.h>
+#include <gypsy/gypsy-device.h>
+#include <gypsy/gypsy-position.h>
+#include <gypsy/gypsy-satellite.h>
+
+gypsy_accuracy_get_type
+gypsy_control_get_type
+gypsy_course_get_type
+gypsy_device_get_type
+gypsy_position_get_type
+gypsy_satellite_get_type

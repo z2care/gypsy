@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<node name="/" xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd" doc:id="gypsy-server-interfaces">
+  <doc:doc>
+    <doc:summary>Gypsy Server Interface</doc:summary>
+  </doc:doc>
+  <interface name="org.freedesktop.Gypsy.Server">
+    <doc:doc>
+      <doc:para>
+        The Server object is used to connect to and obtain the object path of
+        specific GPS devices.
+      </doc:para>
+    </doc:doc>
+
+    <method name="Create">
+      <doc:doc>
+        <doc:description>
+          Connect to the specified GPS device, and create an object implementing
+          the <doc:ref type="xref" to="gypsy-client-interfaces"/>.
+        </doc:description>
+      </doc:doc>
+      <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+      <arg type="s" name="device" direction="in">
+        <doc:doc>
+          <doc:summary>
+            A string identifying the device to connect to. For Bluetooth devices
+            this is the Bluetooth address (such as 00:11:22:33:44:55), for
+            serial devices it is the device node (such as /dev/ttyS0).
+          </doc:summary>
+        </doc:doc>
+      </arg>
+      <arg type="o" name="path" direction="out">
+        <doc:doc>
+          <doc:summary>
+            The object path of the GPS device.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>
+    
+    <method name="Shutdown">
+      <doc:doc>
+        <doc:description>
+          Disconnect from the specified GPS device.
+        </doc:description>
+      </doc:doc>
+      <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+      <arg type="o" name="path" direction="in">
+        <doc:doc>
+          <doc:summary>
+            The object path of the GPS device.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>
+  </interface>
+</node>

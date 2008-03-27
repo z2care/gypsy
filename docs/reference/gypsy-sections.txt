@@ -1,0 +1,126 @@
+<SECTION>
+<FILE>gypsy-control</FILE>
+GypsyControl
+GYPSY_CONTROL_DBUS_SERVICE
+GYPSY_CONTROL_DBUS_PATH
+GYPSY_CONTROL_DBUS_INTERFACE
+<TITLE>GypsyControl</TITLE>
+gypsy_control_get_default
+gypsy_control_create
+<SUBSECTION Standard>
+GypsyControlClass
+GYPSY_CONTROL
+GYPSY_IS_CONTROL
+GYPSY_TYPE_CONTROL
+<SUBSECTION Private>
+gypsy_control_get_type
+</SECTION>
+
+<SECTION>
+<FILE>gypsy-course</FILE>
+GypsyCourse
+GYPSY_COURSE_DBUS_INTERFACE
+GYPSY_COURSE_DBUS_SERVICE
+GypsyCourseFields
+<TITLE>GypsyCourse</TITLE>
+gypsy_course_new
+gypsy_course_get_course
+<SUBSECTION Standard>
+GypsyCourseClass
+GYPSY_COURSE
+GYPSY_IS_COURSE
+GYPSY_TYPE_COURSE
+<SUBSECTION Private>
+gypsy_course_get_type
+</SECTION>
+
+<SECTION>
+<TITLE>GypsySatellite</TITLE>
+<FILE>gypsy-satellite</FILE>
+GypsySatellite
+GYPSY_SATELLITE_DBUS_INTERFACE
+GYPSY_SATELLITE_DBUS_SERVICE
+GypsySatelliteDetails
+gypsy_satellite_new
+gypsy_satellite_get_satellites
+gypsy_satellite_free_satellite_array
+<SUBSECTION Standard>
+GypsySatelliteClass
+GYPSY_SATELLITE
+GYPSY_IS_SATELLITE
+GYPSY_TYPE_SATELLITE
+<SUBSECTION Private>
+gypsy_satellite_get_type
+</SECTION>
+
+<SECTION>
+<TITLE>GypsyPosition</TITLE>
+<FILE>gypsy-position</FILE>
+GypsyPosition
+GYPSY_POSITION_DBUS_INTERFACE
+GYPSY_POSITION_DBUS_SERVICE
+GypsyPositionFields
+gypsy_position_new
+gypsy_position_get_position
+<SUBSECTION Standard>
+GypsyPositionClass
+GYPSY_POSITION
+GYPSY_IS_POSITION
+GYPSY_TYPE_POSITION
+<SUBSECTION Private>
+gypsy_position_get_type
+</SECTION>
+
+<SECTION>
+<TITLE>GypsyDevice</TITLE>
+<FILE>gypsy-device</FILE>
+GypsyDevice
+GYPSY_DEVICE_DBUS_SERVICE
+GYPSY_DEVICE_DBUS_INTERFACE
+GypsyDeviceFixStatus
+gypsy_device_new
+gypsy_device_get_connection_status
+gypsy_device_get_fix_status
+gypsy_device_start
+gypsy_device_stop
+<SUBSECTION Standard>
+GypsyDeviceClass
+GYPSY_DEVICE
+GYPSY_IS_DEVICE
+GYPSY_TYPE_DEVICE
+<SUBSECTION Private>
+gypsy_device_get_type
+</SECTION>
+
+<SECTION>
+<TITLE>GypsyAccuracy</TITLE>
+<FILE>gypsy-accuracy</FILE>
+GypsyAccuracy
+GYPSY_ACCURACY_DBUS_SERVICE
+GYPSY_ACCURACY_DBUS_INTERFACE
+GypsyAccuracyFields
+gypsy_accuracy_new
+gypsy_accuracy_get_accuracy
+<SUBSECTION Standard>
+GypsyAccuracyClass
+GYPSY_ACCURACY
+GYPSY_IS_ACCURACY
+GYPSY_TYPE_ACCURACY
+gypsy_accuracy_get_type
+</SECTION>
+
+<SECTION>
+<TITLE>GypsyTime</TITLE>
+<FILE>gypsy-time</FILE>
+GypsyTime
+GYPSY_TIME_DBUS_SERVICE
+GYPSY_TIME_DBUS_INTERFACE
+gypsy_time_new
+gypsy_time_get_time
+<SUBSECTION Standard>
+GypsyTimeClass
+GYPSY_TIME
+GYPSY_IS_TIME
+GYPSY_TYPE_TIME
+gypsy_time_get_type
+</SECTION>

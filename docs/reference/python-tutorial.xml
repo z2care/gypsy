@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+
+<chapter>
+  <title>Programming Gypsy With Python</title>
+  <section id="overview">
+    <title>Overview of Gypsy</title>
+    <para>
+      Gypsy is a GPS multiplexer daemon for allowing multiple location-aware
+      programs to receive data from the same GPS device. Gypsy was designed for
+      all manner of systems from the high end desktops and laptops, right down
+      to low power handheld systems and mobile phones.
+    </para>
+    <para>
+      Applications talk to the Gypsy daemon over DBus, which handles all
+      communication with the GPS device.  It parses the data from the GPS, and
+      emits DBus signals when data has changed.
+    </para>
+  </section>
+  <section id="connecting">
+    <title>Connecting to a GPS</title>
+    <para>
+      The Gypsy daemon sits on the system bus, and we'll be using the GLib main
+      loop for signals.  This requires a little setup.
+    </para>
+    <programlisting>#! /usr/bin/python
+
+import dbus, dbus.mainloop.glib
+
+# Hook into the glib main loop
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+# Connect to the system bus
+bus = dbus.SystemBus()</programlisting>
+    <para>
+      Now that we're connected to the bus, we can get an object for the Gypsy
+      daemon.
+    </para>
+    <programlisting># Get a connection to the Gypsy daemon
+daemon = bus.get_object("org.freedesktop.Gypsy", "/org/freedesktop/Gypsy")
+# Get an object conforming to the Server interface
+control = dbus.Interface(daemon, "org.freedesktop.Gypsy.Server")</programlisting>
+    <para>
+      The <varname>control</varname> object now implements the
+      <interface>Server</interface> interface, which has a single method:
+      <methodname>Create</methodname>.  This is used to create new
+      <interface>Device</interface> objects.
+    </para>
+    <programlisting># This gives us an object path to the new device
+path = control.Create("00:11:22:33:44:55")
+# Now get the object at that path
+gps = bus.get_object("org.freedesktop.Gypsy", path)
+</programlisting>
+    <para>
+      The object <varname>gps</varname> now represents the GPS, and implements
+      several other interfaces which will be covered next.
+    </para>
+  </section>
+
+  <section id="gps">
+    <title>Getting Your Location</title>
+    <para>
+      As the most useful thing a GPS can do is tell you its location, the most
+      common interface implemented by the GPS object is
+      <interface>Position</interface>.  This interface has a method called
+      <methodname>GetPosition</methodname> which will return the current
+      position, and a signal called <methodname>PositionChanged</methodname>
+      which is emitted when the position has changed.  Note that although the
+      GPS device itself will report a new position every second, Gypsy will only
+      emit <methodname>PositionChanged</methodname> signals if the position has
+      actually changed since the last emission.
+    </para>
+    <para>
+      However, before you can use the GPS object for anything useful, you must
+      tell Gypsy to activate the GPS.  This is done via the
+      <methodname>Start</methodname> method on the <interface>Device</interface>
+      interface.
+    </para>
+    <programlisting>device = dbus.Interface(gps, dbus_interface="org.freedesktop.Gypsy.Device")
+device.Start()</programlisting>
+    <para>
+      The <methodname>GetPosition</methodname> method and
+      <methodname>PositionChanged</methodname> signal both have the same
+      arguments.  The first argument is a bitset of fields which are valid.
+      This is very important because often the GPS will only be able to get a
+      longitude/latitude fix, and not be able to determine the altitude.  Next
+      is a Unix-style timestamp, so the application can know when the location
+      was obtained.  Next are the longitude and latitude, in fractional degrees.
+      Finally the altitude, in meters.
+    </para>
+    <programlisting># Some constants we'll need later
+POSITION_FIELDS_NONE = 0
+POSITION_FIELDS_LATITUDE = 1 &lt;&lt; 0
+POSITION_FIELDS_LONGITUDE = 1 &lt;&lt; 1
+POSITION_FIELDS_ALTITUDE = 1 &lt;&lt; 2
+# Get a proxy to the Position interface, and listen for position changed signals
+position = dbus.Interface(gps, dbus_interface="org.freedesktop.Gypsy.Position")
+def position_changed(fields_set, timestamp, latitude, longitude, altitude):
+    print "%+2f, %+2f (%1fm)" % (
+      (fields_set &amp; POSITION_FIELDS_LATITUDE) and latitude or -1.0,
+      (fields_set &amp; POSITION_FIELDS_LONGITUDE) and longitude or -1.0,
+      (fields_set &amp; POSITION_FIELDS_ALTITUDE) and altitude or -1.0)
+position.connect_to_signal("PositionChanged", position_changed)</programlisting>
+    <para>
+      Finally, we can enter the main loop. As the location changes we'll get
+      signals, which result in the <methodname>position_changed</methodname>
+      callback being called, which prints out the current position.
+    </para>
+  </section>
+</chapter>

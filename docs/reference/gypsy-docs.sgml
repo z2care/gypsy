@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" 
+               "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+
+<book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
+  <bookinfo>
+    <title>Gypsy Reference Manual</title>
+    <releaseinfo>Version <xi:include href="version.xml" parse="text"/></releaseinfo>
+    <authorgroup>
+      <author>
+        <firstname>Iain</firstname>
+        <surname>Holmes</surname>
+        <affiliation>
+          <address>
+            <email>iain@gnome.org</email>
+          </address>
+        </affiliation>
+      </author>
+      <author>
+        <firstname>Ross</firstname>
+        <surname>Burton</surname>
+        <affiliation>
+          <address>
+            <email>ross@openedhand.com</email>
+          </address>
+        </affiliation>
+      </author>
+    </authorgroup>
+
+    <copyright>
+      <year>2007</year>
+      <holder>Iain Holmes</holder>
+    </copyright>
+    <copyright>
+      <year>2007</year>
+      <holder>OpenedHand LTD</holder>
+    </copyright>
+
+    <legalnotice>
+      <para>
+        Permission is granted to copy, distribute and/or modify this
+        document under the terms of the <citetitle>GNU Free
+        Documentation License</citetitle>, Version 1.1 or any later
+        version published by the Free Software Foundation with no
+        Invariant Sections, no Front-Cover Texts, and no Back-Cover
+        Texts. You may obtain a copy of the <citetitle>GNU Free
+        Documentation License</citetitle> from the Free Software
+        Foundation by visiting <ulink type="http"
+        url="http://www.fsf.org">their Web site</ulink> or by writing
+        to:
+
+        <address>
+          The Free Software Foundation, Inc.,
+          <street>59 Temple Place</street> - Suite 330,
+          <city>Boston</city>, <state>MA</state> <postcode>02111-1307</postcode>,
+          <country>USA</country>
+        </address>
+      </para>
+    </legalnotice>
+  </bookinfo>
+
+  <reference>
+    <title>Gypsy Overview</title>
+    
+    <partintro>
+
+    <para>
+
+    Gypsy is a GPS multiplexer daemon for allowing multiple location-aware programs to receive data from the same GPS device. Gypsy was designed for all manner of systems from the high end desktops and laptops, right down to low power handheld systems and mobile phones.
+
+    </para>
+
+    <para>
+
+    Gypsy comes with two components. The first, called gypsy-daemon, is the actual program that sits as a middle man between the GPS device and the client applications. Gypsy-daemon also parses the NMEA sentences from the GPS into a sensible format that applications can use. The second component is LibGypsy. This is a shared library that puts creates a C wrapper around the D-Bus interface, creating GObjects that emit signals and allow the user to control gypsy-daemon.
+
+    </para>
+
+    </partintro>
+
+    <xi:include href="gypsy-design.xml"/>
+    <xi:include href="why-not-gpsd.xml"/>
+  </reference>
+
+  <reference>
+    <title>Tutorials</title>
+    <xi:include href="python-tutorial.xml"/>
+  </reference>
+
+  <xi:include href="ref-gypsy-server.xml"/>
+  <xi:include href="ref-gypsy-client.xml"/>
+
+  <reference>
+    <title>LibGypsy API Reference</title>
+
+    <partintro>
+    
+    <para>
+
+    LibGypsy has two types of objects - objects for controlling the gypsy-daemon process, and objects for receiving data from the gypsy-daemon process.
+
+    </para>
+
+    </partintro>
+
+    <chapter>
+      <title>Gypsy-Daemon Control</title>
+      <xi:include href="xml/gypsy-control.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>GPS Data Objects</title>
+      <xi:include href="xml/gypsy-device.xml"/>
+      <xi:include href="xml/gypsy-accuracy.xml"/>
+      <xi:include href="xml/gypsy-course.xml"/>
+      <xi:include href="xml/gypsy-position.xml"/>
+      <xi:include href="xml/gypsy-satellite.xml"/>
+      <xi:include href="xml/gypsy-time.xml"/>
+    </chapter>
+  </reference>
+</book>

@@ -1,0 +1,7 @@
+To run gypsy
+src/gypsy-daemon
+
+then in another terminal
+ dbus-send --system --type=method_call --dest=org.freedesktop.Gypsy /org/freedesktop/Gypsy org.freedesktop.Gypsy.Server.Create string:/dev/rfcomm5
+ dbus-send --system --type=method_call --dest=org.freedesktop.Gypsy /org/freedesktop/Gypsy/rfcomm5 org.freedesktop.Gypsy.Client.Start
+

@@ -33,7 +33,7 @@ bus = dbus.SystemBus()
 control = bus.get_object(GYPSY_DBUS_SERVICE, GYPSY_DBUS_PATH)
 
 # Create a client for the specified GPS device
-path = control.Create(sys.argv[1])
+path = control.Create(sys.argv[1], dbus_interface=GYPSY_CONTROL_DBUS_INTERFACE)
 
 # Get a proxy to the client
 gps = bus.get_object(GYPSY_DBUS_SERVICE, path)

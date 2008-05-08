@@ -6,6 +6,8 @@
  *
  * Author: Iain Holmes <iain@gnome.org>
  * Copyright (C) 2007
+ *
+ * This example code is in the public domain.
  */
 
 /*

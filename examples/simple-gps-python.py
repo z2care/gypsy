@@ -1,5 +1,7 @@
 #! /usr/bin/python
 
+# This example code is in the public domain.
+
 import sys
 import gobject
 import dbus, dbus.service, dbus.mainloop.glib

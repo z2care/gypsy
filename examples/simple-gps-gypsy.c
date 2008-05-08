@@ -7,6 +7,8 @@
  * Author: Iain Holmes <iain@gnome.org>
  * Copyright (C) 2007 Iain Holmes
  * Copyright (C) 2007 Openedhand Ltd
+ *
+ * This example code is in the public domain.
  */
 
 /*

@@ -28,42 +28,11 @@
 #define __GYPSY_CLIENT_H__
 
 #include <glib-object.h>
+#include "nmea.h"
 
 G_BEGIN_DECLS
 
 #define GYPSY_TYPE_CLIENT (gypsy_client_get_type ())
-
-/* NMEA only allows space for 12 strictly speaking, but some GPS devices send
-   all of the satellites it can see. */
-#define MAX_SATELLITES 32
-
-typedef enum {
-	POSITION_NONE = 0,
-	POSITION_LATITUDE = 1 << 0,
-	POSITION_LONGITUDE = 1 << 1,
-	POSITION_ALTITUDE = 1 << 2
-} PositionFields;
-
-typedef enum {
-	COURSE_NONE = 0,
-	COURSE_SPEED = 1 << 0,
-	COURSE_DIRECTION = 1 << 1,
-	COURSE_CLIMB = 1 << 2
-} CourseFields;
-
-typedef enum {
-	FIX_INVALID = 0,
-	FIX_NONE,
-	FIX_2D,
-	FIX_3D
-} FixType;
-
-typedef enum {
-	ACCURACY_NONE = 0,
-	ACCURACY_POSITION = 1 << 0, /* 3D */
-	ACCURACY_HORIZONAL = 1 << 1, /* 2D */
-	ACCURACY_VERTICAL = 1 << 2, /* Altitude */
-} AccuracyFields;
 
 typedef struct _GypsyClientSatellite {
 	int satellite_id;

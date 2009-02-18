@@ -8,25 +8,30 @@ gypsy_daemon_CFLAGS =		\
 	$(GYPSY_CFLAGS)
 
 gypsy_daemon_LDADD =		\
-	$(GYPSY_LIBS)
+	$(GYPSY_LIBS)		\
+	-lm
 
 NOINST_H_FILES =		\
 	gypsy-client.h		\
-	gypsy-marshal-internal.h		\
+	gypsy-marshal-internal.h	\
 	gypsy-server.h		\
-	nmea-parser.h
+	nmea.h			\
+	garmin.h		\
+	nmea-parser.h		\
+	nmea-gen.h
 
 gypsy_daemon_SOURCES =		\
 	gypsy-client.c		\
-	gypsy-marshal-internal.c		\
+	gypsy-marshal-internal.c	\
 	gypsy-server.c		\
 	main.c			\
 	nmea-parser.c		\
+	nmea-gen.c		\
 	$(NOINST_H_FILES)
 
 BUILT_SOURCES =			\
-	gypsy-marshal-internal.c		\
-	gypsy-marshal-internal.h		\
+	gypsy-marshal-internal.c	\
+	gypsy-marshal-internal.h	\
 	gypsy-client-glue.h	\
 	gypsy-server-glue.h
 

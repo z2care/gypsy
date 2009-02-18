@@ -29,12 +29,8 @@
 
 #include <glib.h>
 
+#include "nmea.h"
 #include "gypsy-client.h"
-
-#define GSV_FIELDS 19
-#define GSA_FIELDS 17
-#define GGA_FIELDS 14
-#define RMC_FIELDS 12
 
 typedef struct _NMEAParseContext {
 	GypsyClient *client;
@@ -54,7 +50,7 @@ typedef struct _NMEAParseContext {
 
 	/* This is used to store the in use details between sentences */
 	int in_use_count;
-	int in_use[MAX_SATELLITES]; /* The satellites that are in use */
+	int in_use[MAX_SAT_SVID]; /* The satellites that are in use */
 
 	/* This is used to store the satellite details between sentences */
 	int number_of_messages; /* How many GSV messages we'll get */

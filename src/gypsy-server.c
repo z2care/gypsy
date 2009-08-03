@@ -57,7 +57,7 @@ static guint32 signals[LAST_SIGNAL] = {0, };
 G_DEFINE_TYPE (GypsyServer, gypsy_server, G_TYPE_OBJECT);
 
 #define GYPSY_GPS_PATH "/org/freedesktop/Gypsy/"
-#define TERMINATE_TIMEOUT 30000 /* 30 second timeout */
+#define TERMINATE_TIMEOUT 10000 /* 10 second timeout */
 
 static void gypsy_server_create (GypsyServer            *gps,
 				 const char             *IN_device_path,

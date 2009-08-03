@@ -164,7 +164,6 @@ gypsy_server_shutdown (GypsyServer           *gps,
 	device_name = g_path_get_basename (IN_device_path);
 	g_debug ("Device name: %s", device_name);
 	path = g_strdup_printf ("%s%s", GYPSY_GPS_PATH, device_name);
-	g_free (device_name);
 
 	client = (GypsyClient *) dbus_g_connection_lookup_g_object (priv->connection, path);
 	g_free (path);
@@ -175,29 +174,30 @@ gypsy_server_shutdown (GypsyServer           *gps,
 							 GYPSY_SERVER_ERROR_NO_CLIENT,
 							 "No such client: %s",
 							 device_name));
-	}
-
-	g_object_unref (client);
-
-	if (--priv->client_count == 0) {
-		if (priv->terminate_id == 0) {
-			priv->terminate_id = g_timeout_add (TERMINATE_TIMEOUT,
-							    gypsy_terminate,
-							    gps);
+	} else {
+		if (--priv->client_count == 0) {
+			if (priv->terminate_id == 0) {
+				priv->terminate_id = g_timeout_add (TERMINATE_TIMEOUT,
+								    gypsy_terminate,
+								    gps);
+			}
 		}
+
+		/* Update the hash of open connnctions */
+		sender = dbus_g_method_get_sender (context);
+		list = g_hash_table_lookup (priv->connections, sender);
+		owner = g_list_find (list, client);
+		if (owner) {
+			g_object_unref (owner->data);
+		}
+		list = g_list_remove (list, client);
+		g_hash_table_insert (priv->connections, sender, list);
+
+		dbus_g_method_return (context);
+
 	}
 
-	/* Update the hash of open connnctions */
-	sender = dbus_g_method_get_sender (context);
-	list = g_hash_table_lookup (priv->connections, sender);
-	owner = g_list_find (list, client);
-	if (owner) {
-		g_object_unref (owner->data);
-	}
-	list = g_list_remove (list, client);
-	g_hash_table_insert (priv->connections, sender, list);
-
-	dbus_g_method_return (context);
+	g_free (device_name);
 }
 
 static void

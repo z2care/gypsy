@@ -170,6 +170,7 @@ get_property (GObject    *object,
 	priv = GET_PRIVATE (object);
 	switch (prop_id) {
 	case PROP_PATH:
+		g_value_set_string (value, priv->object_path);
 		break;
 
 	default:

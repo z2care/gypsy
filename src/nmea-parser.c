@@ -299,6 +299,9 @@ parse_gsv (NMEAParseContext *ctxt,
 	}
 #endif
 
+	if (field_count < GSV_FIELDS)
+		return FALSE;
+
 	message_number = atoi (GSV_FIELD (1));
 
 	if (message_number != ctxt->message_count + 1) {
@@ -393,6 +396,9 @@ parse_gsa (NMEAParseContext *ctxt,
 	}
 #endif
 
+	if (field_count < GSA_FIELDS)
+		return FALSE;
+
 	/* We actually have a real fix type now */
 	gypsy_client_set_fix_type (ctxt->client, atoi (GSA_FIELD(1)), FALSE);
 
@@ -462,6 +468,9 @@ parse_gga (NMEAParseContext *ctxt,
 		}
 	}
 #endif
+
+	if (field_count < GGA_FIELDS)
+		return FALSE;
 
 	timestamp = calculate_timestamp (ctxt, GGA_FIELD(0));
 	if (timestamp > 0) {
@@ -534,6 +543,9 @@ parse_rmc (NMEAParseContext *ctxt,
 		}
 	}
 #endif
+
+	if (field_count < RMC_FIELDS)
+		return FALSE;
 
 	/* We can store the datestamp now */
 	ctxt->datestamp = calculate_datestamp (ctxt, RMC_FIELD(8));

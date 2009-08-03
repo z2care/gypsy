@@ -81,7 +81,6 @@ gypsy_server_error_quark (void)
 /* We don't want to terminate at the moment, as there is no way to be
    restarted until D-Bus 1.2 which has the System bus activation stuff
 */
-#if 0
 static gboolean
 gypsy_terminate (gpointer data)
 {
@@ -91,7 +90,6 @@ gypsy_terminate (gpointer data)
 
 	return FALSE;
 }
-#endif
 
 /* IN_args contains that path to the GPS device we wish to open */
 static void
@@ -182,13 +180,11 @@ gypsy_server_shutdown (GypsyServer           *gps,
 	g_object_unref (client);
 
 	if (--priv->client_count == 0) {
-#if 0
 		if (priv->terminate_id == 0) {
 			priv->terminate_id = g_timeout_add (TERMINATE_TIMEOUT,
 							    gypsy_terminate,
 							    gps);
 		}
-#endif
 	}
 
 	/* Update the hash of open connnctions */
@@ -286,14 +282,12 @@ gypsy_server_remove_clients (GypsyServer *gps,
 		for (l = list; l; l = l->next) {
 			g_object_unref (l->data);
 			if (--priv->client_count == 0) {
-#if 0
 				if (priv->terminate_id == 0) {
 					priv->terminate_id = 
 						g_timeout_add (TERMINATE_TIMEOUT,
 							       gypsy_terminate,
 							       gps);
 				}
-#endif
 			}
 		}
 		g_list_free (list);

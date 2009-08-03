@@ -106,11 +106,6 @@ main (int    argc,
 		{ NULL }
 	};
 
-	if (getuid () != 0) {
-		g_printerr ("You must be root to run %s\n", argv[0]);
-		return 1;
-	}
-
 	context = g_option_context_new ("- GPS daemon");
 	g_option_context_add_main_entries (context, entries, NULL);
 	

@@ -1,0 +1,7 @@
+Gypsy 0.7
+===
+
+* Support auto-start on the system bus
+* Add Garmin->NMEA converter
+* Fix client unreffing
+* Migrate source to git

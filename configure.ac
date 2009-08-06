@@ -1,5 +1,5 @@
 AC_PREREQ(2.59)
-AC_INIT(gypsy, 0.6, http://www.openedhand.com/~iain/gypsy)
+AC_INIT(gypsy, 0.6, http://gypsy.freedesktop.org)
 
 AC_CONFIG_SRCDIR(src/main.c)
 AM_CONFIG_HEADER(config.h)

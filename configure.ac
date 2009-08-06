@@ -32,6 +32,13 @@ DBUS_SERVICES_DIR="${datadir}/dbus-1/system-services"
 AC_SUBST(DBUS_SERVICES_DIR)
 AC_DEFINE_UNQUOTED(DBUS_SERVICES_DIR, "$DBUS_SERVICES_DIR", [Where services dir for D-Bus is])
 
+AC_MSG_CHECKING([what user to run the daemon as])
+AC_ARG_WITH(user, AC_HELP_STRING([--with-user=USER],[What user to run the daemon as (default=root)]),, with_user=root)
+AC_MSG_RESULT([$with_user])
+
+AS_AC_EXPAND(LIBEXECDIR, $libexecdir)
+AS_AC_EXPAND(DAEMON_USER, $with_user)
+
 CFLAGS="$CFLAGS -g -Wall -Werror -Wno-format"
 
 GTK_DOC_CHECK([1.6])

@@ -2,17 +2,10 @@ AC_PREREQ(2.59)
 AC_INIT(gypsy, 0.6, http://gypsy.freedesktop.org)
 
 AC_CONFIG_SRCDIR(src/main.c)
-AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([1.9 foreign])
-GYPSY_VERSION=1
+AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
-AC_ISC_POSIX
-
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_PROG_MAKE_SET
-AC_PROG_GCC_TRADITIONAL
 AM_PROG_LIBTOOL
 
 GYPSY_PC_MODULES='glib-2.0 dbus-glib-1 >= 0.60'
@@ -28,8 +21,6 @@ PKG_CHECK_MODULES(GYPSY, $GYPSY_PC_MODULES)
 AC_SUBST(GYPSY_LIBS)
 AC_SUBST(GYPSY_CFLAGS)
 
-GTK_DOC_CHECK([1.6])
-
 AC_PATH_PROG(DBUS_BINDING_TOOL, dbus-binding-tool)
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 
@@ -43,6 +34,7 @@ AC_DEFINE_UNQUOTED(DBUS_SERVICES_DIR, "$DBUS_SERVICES_DIR", [Where services dir 
 
 CFLAGS="$CFLAGS -g -Wall -Werror -Wno-format"
 
+GTK_DOC_CHECK([1.6])
 # TODO: add --with-xsltproc argument to override PATH
 AC_CHECK_PROGS(XSLT, xsltproc)
 

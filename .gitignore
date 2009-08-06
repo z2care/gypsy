@@ -11,7 +11,6 @@ install-sh
 libtool
 ltmain.sh
 missing
-org.freedesktop.Gypsy.service
 stamp-h1
 
 .deps
@@ -50,3 +49,5 @@ interfaces/gypsy-server.xml
 src/gypsy-daemon
 src/gypsy-marshal-internal.c
 src/gypsy-marshal-internal.h
+org.freedesktop.Gypsy.service
+Gypsy.conf

@@ -47,6 +47,7 @@ AC_CHECK_PROGS(XSLT, xsltproc)
 
 AC_CONFIG_FILES([
 org.freedesktop.Gypsy.service
+Gypsy.conf
 Makefile
 interfaces/Makefile
 src/Makefile

@@ -4,12 +4,8 @@
 <busconfig>
 	<policy user="@DAEMON_USER@">
 		<allow own="org.freedesktop.Gypsy"/>
-		<allow send_destination="org.freedesktop.Gypsy"/>
-		<allow send_interface="org.freedesktop.Gypsy"/>
 	</policy>
-	<policy at_console="true">
-		<allow own="org.freedesktop.Gypsy"/>
+	<policy context="default">
 		<allow send_destination="org.freedesktop.Gypsy"/>
-		<allow send_interface="org.freedesktop.Gypsy"/>
 	</policy>
 </busconfig>

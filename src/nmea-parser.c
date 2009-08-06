@@ -418,7 +418,7 @@ parse_gsa (NMEAParseContext *ctxt,
 	gypsy_client_set_accuracy
 		(ctxt->client,
 		 *GSA_FIELD(14) ? ACCURACY_POSITION : 0 |
-		 *GSA_FIELD(15) ? ACCURACY_HORIZONAL : 0 |
+		 *GSA_FIELD(15) ? ACCURACY_HORIZONTAL : 0 |
 		 *GSA_FIELD(16) ? ACCURACY_VERTICAL : 0,
 		 g_strtod (GSA_FIELD(14), NULL),
 		 g_strtod (GSA_FIELD(15), NULL),
@@ -498,7 +498,7 @@ parse_gga (NMEAParseContext *ctxt,
 	}
 	gypsy_client_set_fix_type (ctxt->client, fix_type, FALSE);
 
-	gypsy_client_set_accuracy (ctxt->client, ACCURACY_HORIZONAL,
+	gypsy_client_set_accuracy (ctxt->client, ACCURACY_HORIZONTAL,
 				   0, g_strtod (GGA_FIELD(7), NULL), 0);
 	
 	return TRUE;

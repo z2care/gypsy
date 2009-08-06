@@ -1311,15 +1311,15 @@ gypsy_client_set_accuracy (GypsyClient *client,
 		}
 	}
 
-	if (fields_set & ACCURACY_HORIZONAL) {
-		if (priv->accuracy_fields & ACCURACY_HORIZONAL) {
+	if (fields_set & ACCURACY_HORIZONTAL) {
+		if (priv->accuracy_fields & ACCURACY_HORIZONTAL) {
 			if (priv->hdop != hdop) {
 				priv->hdop = hdop;
 				changed = TRUE;
 			}
 		} else {
 			priv->hdop = hdop;
-			priv->accuracy_fields |= ACCURACY_HORIZONAL;
+			priv->accuracy_fields |= ACCURACY_HORIZONTAL;
 			changed = TRUE;
 		}
 	}

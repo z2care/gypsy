@@ -39,7 +39,7 @@ typedef enum {
 typedef enum {
 	ACCURACY_NONE		= 0,
 	ACCURACY_POSITION	= 1 << 0, /* 3D */
-	ACCURACY_HORIZONAL	= 1 << 1, /* 2D */
+	ACCURACY_HORIZONTAL	= 1 << 1, /* 2D */
 	ACCURACY_VERTICAL	= 1 << 2, /* Altitude */
 } AccuracyFields;
 

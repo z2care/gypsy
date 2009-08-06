@@ -119,7 +119,7 @@ gypsy_control_error_quark (void)
 }
 
 static void
-finalize (GObject *object)
+dispose (GObject *object)
 {
 	GypsyControlPrivate *priv;
 
@@ -130,25 +130,16 @@ finalize (GObject *object)
 
 		/* Shoutdown the server object when this control object
 		   is unreffed */
-		if (!org_freedesktop_Gypsy_Server_shutdown (priv->proxy, 
+		if (!org_freedesktop_Gypsy_Server_shutdown (priv->proxy,
 							    priv->device_name,
 							    &error)) {
 			g_error_free (error);
 		}
 
 		g_free (priv->device_name);
+		priv->device_name = NULL;
 	}
-		
-	G_OBJECT_CLASS (gypsy_control_parent_class)->finalize (object);
-}
 
-static void
-dispose (GObject *object)
-{
-	GypsyControlPrivate *priv;
-
-	priv = GET_PRIVATE (object);
-	
 	if (priv->proxy) {
 		g_object_unref (priv->proxy);
 		priv->proxy = NULL;
@@ -162,7 +153,6 @@ gypsy_control_class_init (GypsyControlClass *klass)
 {
 	GObjectClass *o_class = (GObjectClass *) klass;
 
-	o_class->finalize = finalize;
 	o_class->dispose = dispose;
 
 	g_type_class_add_private (klass, sizeof (GypsyControlPrivate));

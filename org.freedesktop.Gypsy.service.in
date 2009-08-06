@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=org.freedesktop.Gypsy
-Exec=@libexecdir@/gypsy-daemon --no-daemon
-User=root
+Exec=@LIBEXECDIR@/gypsy-daemon --no-daemon
+User=@DAEMON_USER@

@@ -46,6 +46,7 @@ GTK_DOC_CHECK([1.6])
 AC_CHECK_PROGS(XSLT, xsltproc)
 
 AC_CONFIG_FILES([
+org.freedesktop.Gypsy.service
 Makefile
 interfaces/Makefile
 src/Makefile

@@ -86,6 +86,9 @@ GType gypsy_device_get_type (void);
 
 GypsyDevice *gypsy_device_new (const char *object_path);
 
+gboolean gypsy_device_set_start_options (GypsyDevice *device,
+					 GHashTable  *options,
+					 GError     **error);
 gboolean gypsy_device_start (GypsyDevice *device,
 			    GError     **error);
 gboolean gypsy_device_stop (GypsyDevice *device,

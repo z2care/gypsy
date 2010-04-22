@@ -95,6 +95,9 @@ typedef struct _GypsyClientPrivate {
 
 	NMEAParseContext *ctxt;
 
+	/* For serial devices */
+	speed_t baudrate;
+
 	/* Fix details */
 	int timestamp;
 	FixType fix_type;
@@ -150,6 +153,9 @@ G_DEFINE_TYPE (GypsyClient, gypsy_client, G_TYPE_OBJECT);
 #define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GYPSY_TYPE_CLIENT, GypsyClientPrivate))
 #define GYPSY_CLIENT_SATELLITES_CHANGED_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_UINT, G_TYPE_BOOLEAN, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_INVALID))
 
+static gboolean gypsy_client_set_start_options (GypsyClient *client,
+						GHashTable  *options,
+						GError     **error);
 static gboolean gypsy_client_start (GypsyClient *client,
 				    GError     **error);
 static gboolean gypsy_client_stop (GypsyClient *client,
@@ -645,6 +651,61 @@ gps_channel_connect (GIOChannel  *channel,
 }
 
 static gboolean
+gypsy_client_set_start_options (GypsyClient *client,
+				GHashTable  *options,
+				GError     **error)
+{
+	GypsyClientPrivate *priv;
+	GList *keys, *l;
+
+	priv = GET_PRIVATE (client);
+
+	keys = g_hash_table_get_keys (options);
+	for (l = keys; l != NULL; l = l->next) {
+		if (g_str_equal (l->data, "BaudRate")) {
+			GValue *value = g_hash_table_lookup (options, "BaudRate");
+			guint rate;
+
+			if (priv->channel != NULL) {
+				g_set_error (error, GYPSY_ERROR, 0, "Device already started");
+				g_list_free (keys);
+				return FALSE;
+			}
+
+			rate = g_value_get_uint (value);
+			switch (rate) {
+			case 4800:
+				priv->baudrate = B4800;
+				break;
+			case 9600:
+				priv->baudrate = B9600;
+				break;
+			case 19200:
+				priv->baudrate = B19200;
+				break;
+			case 38400:
+				priv->baudrate = B38400;
+				break;
+			case 57600:
+				priv->baudrate = B57600;
+				break;
+			case 115200:
+				priv->baudrate = B115200;
+				break;
+			default:
+				g_warning ("Unsupported baud rate '%d'", rate);
+				g_set_error (error, GYPSY_ERROR, 0, "Unsupported baud rate '%d'", rate);
+				g_list_free (keys);
+				return FALSE;
+			}
+		}
+	}
+	g_list_free (keys);
+
+	return TRUE;
+}
+
+static gboolean
 gypsy_client_start (GypsyClient *client,
 		    GError     **error)
 {
@@ -687,6 +748,8 @@ gypsy_client_start (GypsyClient *client,
 			}
 
 			cfmakeraw(&term);
+			if (priv->baudrate != B0)
+				cfsetispeed(&term, priv->baudrate);
 
 			if (tcsetattr (priv->fd, TCSAFLUSH, &term) < 0) {
 				g_warning ("Error setting term: %s", g_strerror (errno));
@@ -1133,6 +1196,7 @@ gypsy_client_init (GypsyClient *client)
 	priv = GET_PRIVATE (client);
 	priv->fd = -1;
 	priv->type = GYPSY_DEVICE_TYPE_UNKNOWN;
+	priv->baudrate = B0;
 	priv->ctxt = nmea_parse_context_new (client);
 	priv->timestamp = 0;
 	priv->last_alt_timestamp = 0;

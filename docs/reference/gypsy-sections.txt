@@ -81,6 +81,7 @@ GypsyDeviceFixStatus
 gypsy_device_new
 gypsy_device_get_connection_status
 gypsy_device_get_fix_status
+gypsy_device_set_start_options
 gypsy_device_start
 gypsy_device_stop
 <SUBSECTION Standard>

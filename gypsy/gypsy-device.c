@@ -335,6 +335,35 @@ gypsy_device_new (const char *object_path)
 }
 
 /**
+ * gypsy_device_set_start_options:
+ * @device: #GypsyDevice
+ * @options: a #GHashTable of string keys and #GValue values
+ * @error: A pointer to a #GError to return the error in
+ *
+ * Sets options on the device before calling #gypsy_device_start.
+ * The only valid option currently is "BaudRate", used for serial devices.
+ *
+ * Return value: #TRUE on success, #FALSE otherwise.
+ */
+gboolean
+gypsy_device_set_start_options (GypsyDevice *device,
+				GHashTable  *options,
+				GError     **error)
+{
+	GypsyDevicePrivate *priv;
+
+	g_return_val_if_fail (GYPSY_IS_DEVICE (device), FALSE);
+
+	priv = GET_PRIVATE (device);
+
+	if (!org_freedesktop_Gypsy_Device_set_start_options (priv->proxy, options, error)) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+/**
  * gypsy_device_start:
  * @device: A #GypsyDevice
  * @error: A pointer to a #GError to return the error in

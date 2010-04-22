@@ -81,6 +81,9 @@
   </interface>
 
   <interface name="org.freedesktop.Gypsy.Device">
+    <method name="SetStartOptions">
+      <arg type="a{sv}" name="options" direction="in" />
+    </method>
     <method name="Start" />
     <method name="Stop" />
     

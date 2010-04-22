@@ -460,11 +460,12 @@ garmin_usb_device (GIOChannel *channel,
 	u_int32_t privcmd[GARMIN_PRIV_PKT_MAX_SIZE];
 	gsize chars_written;
 	gsize chars_read;
-	GError *error = NULL;
 
 	/*
 	 *  Since the Garmin driver sets up the device at /dev/ttyUSB<n> it seems
 	 *  to be a pretty good bet that this check will be valid.
+	 *
+	 *  FIXME: Use gudev to get the VID of the device, and check against Garmin?
 	 */
 
 	if (! strcmp (devpath, "/dev/ttyUSB0")) {
@@ -484,8 +485,6 @@ garmin_usb_device (GIOChannel *channel,
 		if (status != G_IO_STATUS_NORMAL) {
 			g_warning ("GARMIN: Error writing \"Private Info Req\" packet:\n%s", 
 				   g_strerror (errno));
-			g_set_error (&error, GYPSY_ERROR, errno, 
-				     g_strerror (errno));
 			return -1;
 		}
 
@@ -500,9 +499,8 @@ garmin_usb_device (GIOChannel *channel,
 						  NULL);
 
 		if (status != G_IO_STATUS_NORMAL) {
-			g_warning ("GARMIN: Error reading \"Private Info Resp\" packet:\n%s", g_strerror (errno));
-			g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));
-			return -1;
+			g_message ("GARMIN: Error reading \"Private Info Resp\" packet:\n%s", g_strerror (errno));
+			return 0;
 		}
 
 		if ((privcmd[0] == GARMIN_LAYERID_PRIVATE) &&
@@ -511,9 +509,8 @@ garmin_usb_device (GIOChannel *channel,
 			g_debug ("GARMIN: device type confirmed");
 			return 1;
 		} else {
-			g_warning ("GARMIN: \"Private Info Resp\" packet data not recognized");
-			g_set_error (&error, GYPSY_ERROR, -1, "Cannot identify device %s", devpath);
-			return -1;
+			g_message ("GARMIN: \"Private Info Resp\" packet data not recognized");
+			return 0;
 		}
 	} else {
 		return 0;

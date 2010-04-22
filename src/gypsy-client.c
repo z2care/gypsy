@@ -63,15 +63,25 @@
 
 #define GYPSY_ERROR g_quark_from_static_string ("gypsy-error")
 
+typedef enum {
+	GYPSY_DEVICE_TYPE_UNKNOWN = -1,
+	GYPSY_DEVICE_TYPE_SERIAL,
+	GYPSY_DEVICE_TYPE_GARMIN,
+	GYPSY_DEVICE_TYPE_FIFO,
+	GYPSY_DEVICE_TYPE_BLUETOOTH
+} GypsyDeviceType;
+
 /* Defined in main.c */
 extern char* nmea_log;
 
 #define READ_BUFFER_SIZE 1024
+#define SPEED_TIMEOUT 1000
 
 typedef struct _GypsyClientPrivate {
 
 	char *device_path; /* Device path of our GPS */
 	int fd;	/* File descriptor used to read from the GPS */
+	GypsyDeviceType type;
 
 	GIOChannel *channel; /* The channel we talk to the GPS on */
 	GIOChannel *debug_log; /* The channel to write the NMEA to, 
@@ -499,7 +509,7 @@ garmin_usb_device (GIOChannel *channel,
 						  NULL);
 
 		if (status != G_IO_STATUS_NORMAL) {
-			g_message ("GARMIN: Error reading \"Private Info Resp\" packet:\n%s", g_strerror (errno));
+			g_message ("GARMIN: Error reading \"Private Info Resp\" packet: %s", g_strerror (errno));
 			return 0;
 		}
 
@@ -588,14 +598,20 @@ gps_channel_connect (GIOChannel  *channel,
 		     gpointer     userdata)
 {
 	GypsyClientPrivate *priv;
+	int ret;
 
 	priv = GET_PRIVATE (userdata);
 
 	g_debug ("GPS channel can connect");
 
-	switch (garmin_usb_device (channel, priv->device_path)) {
+	ret = 0;
+	if (priv->type == GYPSY_DEVICE_TYPE_SERIAL)
+		ret = garmin_usb_device (channel, priv->device_path);
+
+	switch (ret) {
 	case 1:
 		/* the device *IS* a Garmin -- we must do translation to NMEA */
+		priv->type = GYPSY_DEVICE_TYPE_GARMIN;
 		garmin_init (channel);
 		priv->input_id = g_io_add_watch_full (priv->channel, 
 						      G_PRIORITY_HIGH_IDLE,
@@ -649,11 +665,9 @@ gypsy_client_start (GypsyClient *client,
 
 	/* Open a connection to our device */
 
-	/* we assume that a device path starting with slash is a tty device */
+	/* we assume that a device path starting with slash is a tty device or
+	 * a FIFO */
 	if (priv->device_path[0] == '/') {
-
-		struct termios term;
-
 		priv->fd = open (priv->device_path, O_RDWR | O_NOCTTY | O_NONBLOCK);
 		if (priv->fd == -1) {
 			g_warning ("Error opening device %s: %s", priv->device_path, g_strerror (errno));
@@ -661,20 +675,29 @@ gypsy_client_start (GypsyClient *client,
 			return FALSE;
 		}
 
-		if (tcgetattr (priv->fd, &term) < 0) {
-			g_warning ("Error getting term: %s", g_strerror (errno));
-			g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
-			return FALSE;
-		}
+		if (isatty (priv->fd)) {
+			struct termios term;
 
-		cfmakeraw(&term);
+			/* We'll be detecting whether it's garmin later */
+			priv->type = GYPSY_DEVICE_TYPE_SERIAL;
+			if (tcgetattr (priv->fd, &term) < 0) {
+				g_warning ("Error getting term: %s", g_strerror (errno));
+				g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
+				return FALSE;
+			}
 
-		if (tcsetattr (priv->fd, TCIOFLUSH, &term) < 0) {
-			g_warning ("Error setting term: %s", g_strerror (errno));
-			g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
-			return FALSE;
+			cfmakeraw(&term);
+
+			if (tcsetattr (priv->fd, TCIOFLUSH, &term) < 0) {
+				g_warning ("Error setting term: %s", g_strerror (errno));
+				g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
+				return FALSE;
+			}
+		} else {
+			priv->type = GYPSY_DEVICE_TYPE_FIFO;
 		}
 	} else {
+		priv->type = GYPSY_DEVICE_TYPE_BLUETOOTH;
 #ifdef HAVE_BLUEZ
 		priv->fd = socket (AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 #else
@@ -1109,6 +1132,7 @@ gypsy_client_init (GypsyClient *client)
 
 	priv = GET_PRIVATE (client);
 	priv->fd = -1;
+	priv->type = GYPSY_DEVICE_TYPE_UNKNOWN;
 	priv->ctxt = nmea_parse_context_new (client);
 	priv->timestamp = 0;
 	priv->last_alt_timestamp = 0;

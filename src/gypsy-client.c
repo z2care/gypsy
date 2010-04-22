@@ -688,7 +688,7 @@ gypsy_client_start (GypsyClient *client,
 
 			cfmakeraw(&term);
 
-			if (tcsetattr (priv->fd, TCIOFLUSH, &term) < 0) {
+			if (tcsetattr (priv->fd, TCSAFLUSH, &term) < 0) {
 				g_warning ("Error setting term: %s", g_strerror (errno));
 				g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
 				return FALSE;

@@ -687,14 +687,19 @@ gypsy_client_start (GypsyClient *client,
 	}
 
 	if (nmea_log) {
-		char *device, *filename;
-		device = g_path_get_basename (priv->device_path);
-		filename = g_strconcat (nmea_log, ".", device, NULL);
-		priv->debug_log = g_io_channel_new_file (filename, "w", NULL);
+		if (g_str_equal (nmea_log, "stdout") ||
+		    g_str_equal (nmea_log, "-")) {
+			priv->debug_log = g_io_channel_unix_new (STDOUT_FILENO);
+		} else {
+			char *device, *filename;
+			device = g_path_get_basename (priv->device_path);
+			filename = g_strconcat (nmea_log, ".", device, NULL);
+			priv->debug_log = g_io_channel_new_file (filename, "w", NULL);
+			g_free (device);
+			g_free (filename);
+		}
 		g_io_channel_set_encoding (priv->debug_log, NULL, NULL);
 		g_io_channel_set_buffered (priv->debug_log, FALSE);
-		g_free (device);
-		g_free (filename);
 	}
 
 	/* Set up the IO Channel */

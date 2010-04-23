@@ -731,6 +731,16 @@ gypsy_client_start (GypsyClient *client,
 	/* we assume that a device path starting with slash is a tty device or
 	 * a FIFO */
 	if (priv->device_path[0] == '/') {
+		priv->fd = open (priv->device_path, O_RDONLY | O_NOCTTY | O_NONBLOCK);
+		if (priv->fd != -1 && isatty (priv->fd)) {
+			/* Reopen read-write for TTY devices,
+			 * we'll be detecting whether it's garmin later */
+			priv->type = GYPSY_DEVICE_TYPE_SERIAL;
+			close (priv->fd);
+			priv->fd = open (priv->device_path, O_RDWR | O_NOCTTY | O_NONBLOCK);
+		} else {
+			priv->type = GYPSY_DEVICE_TYPE_FIFO;
+		}
 		priv->fd = open (priv->device_path, O_RDWR | O_NOCTTY | O_NONBLOCK);
 		if (priv->fd == -1) {
 			g_warning ("Error opening device %s: %s", priv->device_path, g_strerror (errno));
@@ -738,11 +748,9 @@ gypsy_client_start (GypsyClient *client,
 			return FALSE;
 		}
 
-		if (isatty (priv->fd)) {
+		if (priv->type == GYPSY_DEVICE_TYPE_SERIAL) {
 			struct termios term;
 
-			/* We'll be detecting whether it's garmin later */
-			priv->type = GYPSY_DEVICE_TYPE_SERIAL;
 			if (tcgetattr (priv->fd, &term) < 0) {
 				g_warning ("Error getting term: %s", g_strerror (errno));
 				g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
@@ -758,8 +766,6 @@ gypsy_client_start (GypsyClient *client,
 				g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
 				return FALSE;
 			}
-		} else {
-			priv->type = GYPSY_DEVICE_TYPE_FIFO;
 		}
 	} else {
 		priv->type = GYPSY_DEVICE_TYPE_BLUETOOTH;

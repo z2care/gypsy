@@ -13,7 +13,7 @@
 #define GSV_FIELDS 19
 #define GSA_FIELDS 17
 #define GGA_FIELDS 14
-#define RMC_FIELDS 12
+#define RMC_FIELDS 11
 
 typedef enum {
 	POSITION_NONE		= 0,

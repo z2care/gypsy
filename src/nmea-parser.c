@@ -516,7 +516,7 @@ parse_gga (NMEAParseContext *ctxt,
    8) Date in ddmmyy
    9) Magnetic Variation, degrees
    10) E or W
-   11) FAA mode indicator (NMEA 2.3 and later)
+   11) FAA mode indicator (NMEA 2.3 and later, optional)
 */
 #define RMC_FIELD(x) (ctxt->fields.rmc_fields[x])
 static gboolean

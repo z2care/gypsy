@@ -17,6 +17,19 @@ if test x$enable_bluetooth = xyes; then
 	GYPSY_PC_MODULES="$GYPSY_PC_MODULES bluez"
 fi
 
+AC_ARG_ENABLE(n810, AC_HELP_STRING([--enable-n810],[Enable support for Nokia N810 internal GPS]), ENABLE_N810=yes,)
+PKG_CHECK_MODULES(GPSBT, [gpsbt],[
+	if test "x$ENABLE_N810" = "xyes"; then
+		AC_DEFINE(ENABLE_N810,1,[Define if N810 support is enabled])
+		AC_SUBST(GPSBT_LIBS)
+		AC_SUBST(GPSBT_CFLAGS)
+	fi
+],[
+	if test "x$ENABLE_N810" = "xyes"; then
+		AC_MSG_ERROR([libgpsbt is required for N810 gps support])
+	fi
+])
+
 PKG_CHECK_MODULES(GYPSY, $GYPSY_PC_MODULES)
 AC_SUBST(GYPSY_LIBS)
 AC_SUBST(GYPSY_CFLAGS)

@@ -5,10 +5,12 @@ gypsy_daemon_CFLAGS =		\
 	-I$(srcdir)		\
 	-I$(top_builddir)	\
 	-DLOCALSTATEDIR=\"$(localstatedir)\"	\
-	$(GYPSY_CFLAGS)
+	$(GYPSY_CFLAGS)		\
+	$(GPSBT_CFLAGS)
 
 gypsy_daemon_LDADD =		\
 	$(GYPSY_LIBS)		\
+	$(GPSBT_LIBS)		\
 	-lm
 
 NOINST_H_FILES =		\

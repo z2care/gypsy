@@ -49,6 +49,11 @@
 #include <bluetooth/rfcomm.h>
 #endif
 
+#ifdef ENABLE_N810
+#include <gpsctrl.h>
+#define N810_INTERNAL_GPS_PATH "/dev/pgps"
+#endif
+
 #include <glib.h>
 
 #include <dbus/dbus-glib.h>
@@ -238,6 +243,14 @@ shutdown_connection (GypsyClient *client)
 	}
 
 	priv->chars_in_buffer = 0;
+
+#ifdef ENABLE_N810
+	/* Turn off the N810's GPS device */
+	if (g_ascii_strcasecmp (priv->device_path, N810_INTERNAL_GPS_PATH) == 0) {
+		g_debug ("N810 chip off");
+		gpsctrl_set_chip_off ();
+	}
+#endif /* ENABLE_N810 */
 }
 
 static gboolean
@@ -725,6 +738,14 @@ gypsy_client_start (GypsyClient *client,
 	else {
 		g_debug ("Starting connection to %s", priv->device_path);
 	}
+
+	/* Enable the N810's internal GPS */
+#ifdef ENABLE_N810
+		if (g_ascii_strcasecmp (priv->device_path, N810_INTERNAL_GPS_PATH) == 0) {
+			g_debug ("N810 chip on");
+			gpsctrl_set_chip_on ();
+		}
+#endif /* ENABLE_N810 */
 
 	/* Open a connection to our device */
 

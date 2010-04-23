@@ -698,6 +698,8 @@ gypsy_client_set_start_options (GypsyClient *client,
 				g_list_free (keys);
 				return FALSE;
 			}
+		} else {
+			g_message ("Unsupported option key '%s'", l->data);
 		}
 	}
 	g_list_free (keys);

@@ -45,21 +45,21 @@ CLEANFILES = $(BUILT_SOURCES) \
 	stamp-gypsy-server-glue.h
 
 gypsy-marshal-internal.h: gypsy-marshal.list $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=gypsy_marshal > $@
+	$(AM_V_GEN)$(GLIB_GENMARSHAL) $< --header --prefix=gypsy_marshal > $@
 gypsy-marshal-internal.c: gypsy-marshal.list gypsy-marshal-internal.h $(GLIB_GENMARSHAL)
-	echo "#include \"gypsy-marshal-internal.h\"" > $@ \
+	$(AM_V_GEN)echo "#include \"gypsy-marshal-internal.h\"" > $@ \
 	&& $(GLIB_GENMARSHAL) --prefix=gypsy_marshal $(srcdir)/gypsy-marshal.list --body >> $@
 
 %-glue.h: stamp-%-glue.h
 	@true
 stamp-gypsy-server-glue.h: ../interfaces/gypsy-server.xml
-	$(DBUS_BINDING_TOOL) --prefix=gypsy_server --mode=glib-server $< > xgen-$(@F) \
+	$(AM_V_GEN)$(DBUS_BINDING_TOOL) --prefix=gypsy_server --mode=glib-server $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F)	\
 	&& echo timestamp > $(@F)
 
 stamp-gypsy-client-glue.h: ../interfaces/gypsy-client.xml
-	$(DBUS_BINDING_TOOL) --prefix=gypsy_client --mode=glib-server $< > xgen-$(@F) \
+	$(AM_V_GEN)$(DBUS_BINDING_TOOL) --prefix=gypsy_client --mode=glib-server $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \
 	&& echo timestamp > $(@F)

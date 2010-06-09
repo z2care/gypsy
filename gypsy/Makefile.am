@@ -44,14 +44,14 @@ CLEANFILES = $(BUILT_SOURCES)
 %-bindings.h: stamp-%-bindings.h
 	@true
 stamp-%-bindings.h: ../interfaces/%.xml
-	$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=gypsy $< > xgen-$(@F) \
+	$(AM_V_GEN)$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=gypsy $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \
 	&& echo timestamp > $(@F)
 
 gypsy-marshal.h: $(srcdir)/gypsy-marshal.list $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=gypsy_marshal > $@
+	$(AM_V_GEN)$(GLIB_GENMARSHAL) $< --header --prefix=gypsy_marshal > $@
 gypsy-marshal.c: $(srcdir)/gypsy-marshal.list gypsy-marshal.h $(GLIB_GENMARSHAL)
-	echo "#include \"gypsy-marshal.h\"" > $@ \
+	$(AM_V_GEN)echo "#include \"gypsy-marshal.h\"" > $@ \
 	&& $(GLIB_GENMARSHAL) --prefix=gypsy_marshal $(srcdir)/gypsy-marshal.list --body >> $@
 

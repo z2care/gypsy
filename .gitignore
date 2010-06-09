@@ -41,6 +41,7 @@ docs/reference/gypsy.signals
 docs/reference/ref-gypsy-client.xml
 docs/reference/ref-gypsy-server.xml
 docs/reference/scan-build.stamp
+docs/reference/*.bak
 examples/simple-gps-dbus
 examples/simple-gps-gypsy
 examples/simple-gps-satellites

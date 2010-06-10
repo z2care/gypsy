@@ -41,13 +41,8 @@ libgypsy_include_HEADERS =	\
 EXTRA_DIST = gypsy-marshal.list
 CLEANFILES = $(BUILT_SOURCES)
 
-%-bindings.h: stamp-%-bindings.h
-	@true
-stamp-%-bindings.h: ../interfaces/%.xml
-	$(AM_V_GEN)$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=gypsy $< > xgen-$(@F) \
-	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
-	&& rm -f xgen-$(@F) \
-	&& echo timestamp > $(@F)
+%-bindings.h: ../interfaces/%.xml
+	$(AM_V_GEN)$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=gypsy $< > $@
 
 gypsy-marshal.h: $(srcdir)/gypsy-marshal.list $(GLIB_GENMARSHAL)
 	$(AM_V_GEN)$(GLIB_GENMARSHAL) $< --header --prefix=gypsy_marshal > $@

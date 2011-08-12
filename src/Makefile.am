@@ -15,7 +15,10 @@ gypsy_daemon_LDADD =		\
 
 NOINST_H_FILES =		\
 	gypsy-client.h		\
+	gypsy-garmin-parser.h	\
 	gypsy-marshal-internal.h	\
+	gypsy-nmea-parser.h	\
+	gypsy-parser.h		\
 	gypsy-server.h		\
 	nmea.h			\
 	garmin.h		\
@@ -24,7 +27,10 @@ NOINST_H_FILES =		\
 
 gypsy_daemon_SOURCES =		\
 	gypsy-client.c		\
+	gypsy-garmin-parser.c	\
 	gypsy-marshal-internal.c	\
+	gypsy-nmea-parser.c	\
+	gypsy-parser.c		\
 	gypsy-server.c		\
 	main.c			\
 	nmea-parser.c		\

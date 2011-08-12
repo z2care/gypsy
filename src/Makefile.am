@@ -22,8 +22,7 @@ NOINST_H_FILES =		\
 	gypsy-server.h		\
 	nmea.h			\
 	garmin.h		\
-	nmea-parser.h		\
-	nmea-gen.h
+	nmea-parser.h
 
 gypsy_daemon_SOURCES =		\
 	gypsy-client.c		\
@@ -34,7 +33,6 @@ gypsy_daemon_SOURCES =		\
 	gypsy-server.c		\
 	main.c			\
 	nmea-parser.c		\
-	nmea-gen.c		\
 	$(NOINST_H_FILES)
 
 BUILT_SOURCES =			\

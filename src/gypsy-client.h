@@ -33,6 +33,24 @@
 G_BEGIN_DECLS
 
 #define GYPSY_TYPE_CLIENT (gypsy_client_get_type ())
+#define GYPSY_CLIENT(obj)                                               \
+   (G_TYPE_CHECK_INSTANCE_CAST ((obj),                                  \
+                                GYPSY_TYPE_CLIENT,                      \
+                                GypsyClient))
+#define GYPSY_CLIENT_CLASS(klass)                                       \
+   (G_TYPE_CHECK_CLASS_CAST ((klass),                                   \
+                             GYPSY_TYPE_CLIENT,                         \
+                             GypsyClientClass))
+#define GYPSY_IS_CLIENT(obj)                                            \
+   (G_TYPE_CHECK_INSTANCE_TYPE ((obj),                                  \
+                                GYPSY_TYPE_CLIENT))
+#define GYPSY_IS_CLIENT_CLASS(klass)                                    \
+   (G_TYPE_CHECK_CLASS_TYPE ((klass),                                   \
+                             GYPSY_TYPE_CLIENT))
+#define GYPSY_CLIENT_GET_CLASS(obj)                                     \
+   (G_TYPE_INSTANCE_GET_CLASS ((obj),                                   \
+                               GYPSY_TYPE_CLIENT,                       \
+                               GypsyClientClass))
 
 typedef struct _GypsyClientSatellite {
 	int satellite_id;

@@ -50,6 +50,11 @@ struct _GypsyParserClass
 };
 
 GType gypsy_parser_get_type (void) G_GNUC_CONST;
+gboolean gypsy_parser_received_data (GypsyParser  *parser,
+                                     const guchar *data,
+                                     guint         length,
+                                     GError      **error);
+gsize gypsy_parser_get_space_in_buffer (GypsyParser *parser);
 GypsyClient *gypsy_parser_get_client (GypsyParser *parser);
 
 G_END_DECLS

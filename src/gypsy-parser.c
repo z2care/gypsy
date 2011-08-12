@@ -117,7 +117,7 @@ gypsy_parser_received_data (GypsyParser  *parser,
     return klass->received_data (parser, data, length, error);
 }
 
-guint
+gsize
 gypsy_parser_get_space_in_buffer (GypsyParser *parser)
 {
     GypsyParserClass *klass = GYPSY_PARSER_GET_CLASS (parser);

@@ -61,10 +61,11 @@
 
 #include "gypsy-client.h"
 #include "gypsy-marshal-internal.h"
-#include "nmea.h"
-#include "nmea-parser.h"
+#include "gypsy-parser.h"
+#include "gypsy-garmin-parser.h"
+#include "gypsy-nmea-parser.h"
+
 #include "garmin.h"
-#include "nmea-gen.h"
 
 #define GYPSY_ERROR g_quark_from_static_string ("gypsy-error")
 
@@ -94,11 +95,7 @@ typedef struct _GypsyClientPrivate {
 
 	guint32 error_id, connect_id, input_id;
 
-	char sentence[READ_BUFFER_SIZE + 1]; /* This is for building 
-					        the NMEA sentence */
-	int chars_in_buffer; /* How many characters are in the buffer */
-
-	NMEAParseContext *ctxt;
+	GypsyParser *parser;
 
 	/* For serial devices */
 	speed_t baudrate;
@@ -200,11 +197,6 @@ static gboolean gypsy_client_get_time (GypsyClient *client,
 
 #include "gypsy-client-glue.h"
 
-/* used for Garmin -> NMEA translation */
-D800_Pvt_Data_Type	lastpvt;
-cpo_sat_data		lastsatdata[SAT_MAX_COUNT];
-int			satdata_valid = 0;
-
 static void
 shutdown_connection (GypsyClient *client)
 {
@@ -242,7 +234,10 @@ shutdown_connection (GypsyClient *client)
 		priv->debug_log = NULL;
 	}
 
-	priv->chars_in_buffer = 0;
+	if (priv->parser) {
+		g_object_unref (priv->parser);
+		priv->parser = NULL;
+	}
 
 #ifdef ENABLE_N810
 	/* Turn off the N810's GPS device */
@@ -274,205 +269,33 @@ gps_channel_error (GIOChannel  *channel,
 }
 
 static gboolean
-gps_channel_garmin_input (GIOChannel  *channel,
-			  GIOCondition condition,
-			  gpointer     userdata)
-{
-	GypsyClientPrivate *priv;
-	GIOStatus status;
-	char *buf;
-	gsize chars_left_in_buffer;
-	gsize chars_read;
-	GError *error = NULL;
-
-	int pktlen;
-	char nmeabuf[256];
-
-	priv = GET_PRIVATE (userdata);
-
-	/* set up for the next read */
-	buf = priv->sentence + priv->chars_in_buffer;
-	chars_left_in_buffer = READ_BUFFER_SIZE - priv->chars_in_buffer;
-
-	status = g_io_channel_read_chars (priv->channel,
-					  buf,
-					  chars_left_in_buffer,
-					  &chars_read,
-					  &error);
-
-	if (priv->debug_log) {
-		g_io_channel_write_chars(priv->debug_log, buf, chars_read, NULL, NULL);
-	}
-
-	if (status == G_IO_STATUS_NORMAL) {
-		/* update the count of how much we've read 
-		   of the current packet */
-		priv->chars_in_buffer += chars_read;
-
-		/* get a pointer to our packet */
-		G_Packet_t * pGpkt = (G_Packet_t*)priv->sentence;
-
-		/* check that we have at least enough for the packet header 
-		   and the packet data; we could conceivably have multiple 
-		   packets in the buffer between reads */
-
-		while ((priv->chars_in_buffer >= GARMIN_HEADER_SIZE) && 
-		       (priv->chars_in_buffer >= (pktlen = GARMIN_HEADER_SIZE + pGpkt->mDataSize))) {
-			char *eos;
-
-			/*g_debug("PacketId: %d   pktlen = %d", 
-				  pGpkt->mPacketId, pktlen);*/
-
-			if (pGpkt->mPacketId == Pid_Pvt_Data) {
-				memcpy(&lastpvt, pGpkt->mData, sizeof(lastpvt));
-
-				/* A single Pvt_Data packet translates 
-				   into 4 NMEA sentences. */
-
-				if (nmea_gpgga(&lastpvt, satdata_valid ? lastsatdata : NULL, nmeabuf) == 0) {
-					*(strchr (nmeabuf, '\r')) = '\0';
-					g_debug ("NMEA sentence: %s", nmeabuf);
-					if (nmea_parse_sentence (priv->ctxt, nmeabuf, NULL) == FALSE) {
-						g_debug ("Invalid NMEA sentence: %s", nmeabuf);
-					}
-				}
-
-				if (nmea_gprmc(&lastpvt, nmeabuf) == 0) {
-					*(strchr (nmeabuf, '\r')) = '\0';
-					g_debug ("NMEA sentence: %s", nmeabuf);
-					if (nmea_parse_sentence (priv->ctxt, nmeabuf, NULL) == FALSE) {
-						g_debug ("Invalid NMEA sentence: %s", nmeabuf);
-					}
-				}
-
-				if (nmea_gpgll(&lastpvt, nmeabuf) == 0) {
-					*(strchr (nmeabuf, '\r')) = '\0';
-					g_debug ("NMEA sentence: %s", nmeabuf);
-					if (nmea_parse_sentence (priv->ctxt, nmeabuf, NULL) == FALSE) {
-						g_debug ("Invalid NMEA sentence: %s", nmeabuf);
-					}
-				}
-
-				if (nmea_gpgsa(&lastpvt, satdata_valid ? lastsatdata : NULL, nmeabuf) == 0) {
-					*(strchr (nmeabuf, '\r')) = '\0';
-					g_debug ("NMEA sentence: %s", nmeabuf);
-					if (nmea_parse_sentence (priv->ctxt, nmeabuf, NULL) == FALSE) {
-						g_debug ("Invalid NMEA sentence: %s", nmeabuf);
-					}
-				}
-			} else if (pGpkt->mPacketId == Pid_SatData_Record) {
-				memcpy(lastsatdata, pGpkt->mData, 
-				       sizeof(lastsatdata));
-
-				satdata_valid = 1;
-
-				if (nmea_gpgsv(lastsatdata, nmeabuf) == 0) {
-					/*
-					 *  The Garmin SatData record translates to multiple GPGSV sentences,
-					 *  but the parser only handles one sentence per buffer so we have to
-					 *  feed them in one at a time.
-					 */
-
-					char *nmeabufptr = nmeabuf;
-					int length;
-
-					/* NMEA sentences end with <CR><LF>, so find the <CR> at the end of each sentence */
-					while ((eos = strchr (nmeabufptr, '\r'))) {
-						/* Accounf for <LF> */
-						length = (eos - nmeabufptr) + 2;
-						if (length > 1) {
-							/* terminate the string at the <CR> */
-							*eos = '\0';
-
-							g_debug ("NMEA sentence: %s", nmeabufptr);
-							if (nmea_parse_sentence (priv->ctxt, nmeabufptr, NULL) == FALSE)
-								g_debug ("Invalid sentence: %s", nmeabufptr);
-						}
-
-						if (length > 0) {
-							/* point to the next sentence in the buffer */
-							nmeabufptr += length;
-						}
-					}
-				}
-			} else {
-				g_debug ("Untranslated PacketId = %d", pGpkt->mPacketId);
-			}
-
-			/* now that we're done with this packet, 
-			   move any remaining data up to the
-			   beginning of the buffer */
-			memmove (priv->sentence, priv->sentence + pktlen, 
-				 priv->chars_in_buffer - pktlen);
-			priv->chars_in_buffer -= pktlen;
-		}
-	} else {
-		g_warning ("Read error: %s", g_strerror (errno));
-		g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));
-	}
-
-	return TRUE;
-}
-
-static gboolean
 gps_channel_input (GIOChannel  *channel,
 		   GIOCondition condition,
 		   gpointer     userdata)
 {
 	GypsyClientPrivate *priv;
 	GIOStatus status;
-	char *buf;
+	char buf[READ_BUFFER_SIZE];
 	gsize chars_left_in_buffer, chars_read;
 	GError *error = NULL;
 
 	priv = GET_PRIVATE (userdata);
 
-	/* set up for the next read */
-	buf = priv->sentence + priv->chars_in_buffer;
-	chars_left_in_buffer = READ_BUFFER_SIZE - priv->chars_in_buffer;
-
+	chars_left_in_buffer = gypsy_parser_get_space_in_buffer (priv->parser);
 	status = g_io_channel_read_chars (priv->channel,
-					  buf, 
+					  buf,
 					  chars_left_in_buffer,
 					  &chars_read,
 					  NULL);
 
 	if (priv->debug_log) {
-		g_io_channel_write_chars (priv->debug_log, buf, 
+		g_io_channel_write_chars (priv->debug_log, buf,
 					  chars_read, NULL, NULL);
 	}
 
 	if (status == G_IO_STATUS_NORMAL) {
-		char *eos = NULL;
-		int length;
-
-		priv->chars_in_buffer += chars_read;
-
-		/* Append a \0 to treat as a string (so we don't run off the end of valid data);
-		   the \0 will be overwritten in the next call to g_io_channel_read_chars */
-		*(priv->sentence + priv->chars_in_buffer) = '\0';
-
-		/* NMEA sentences end with <CR><LF>, so find the <CR> at the end of each sentence */
-		while ((eos = strchr (priv->sentence, '\r'))) {
-			/* Account for <LF> */
-			length = (eos - priv->sentence) + 2;
-			if (length > 1) {
-				/* terminate the string at the <CR> */
-				*eos = '\0';
-
-				g_debug ("NMEA sentence: %s", priv->sentence);
-				if (nmea_parse_sentence (priv->ctxt, priv->sentence, NULL) == FALSE) {
-					g_debug ("Invalid sentence: %s", priv->sentence);
-				}
-			}
-
-			if (length > 0) {
-				/* Remove the sentence from the builder and
-				   move the rest up including terminating 0 */
-				memmove (priv->sentence, eos + 2, (priv->chars_in_buffer - length) + 1);
-				priv->chars_in_buffer -= length;
-			}
-		}
+		gypsy_parser_received_data (priv->parser,
+					    (guchar *)buf, chars_read, NULL);
 	} else {
 		g_warning ("Read error: %s", g_strerror (errno));
 		g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));
@@ -481,9 +304,11 @@ gps_channel_input (GIOChannel  *channel,
 	return TRUE;
 }
 
-static int
-garmin_usb_device (GIOChannel *channel, 
-		   char      *devpath)
+/* Returns TRUE/FALSE to indicate success/error */
+static gboolean
+garmin_usb_device (GIOChannel *channel,
+		   char      *devpath,
+		   gboolean  *device_is_garmin)
 {
 	GIOStatus status;
 	u_int32_t privcmd[GARMIN_PRIV_PKT_MAX_SIZE];
@@ -497,6 +322,7 @@ garmin_usb_device (GIOChannel *channel,
 	 *  FIXME: Use gudev to get the VID of the device, and check against Garmin?
 	 */
 
+	*device_is_garmin = FALSE;
 	if (! strcmp (devpath, "/dev/ttyUSB0")) {
 
 		/* query the device driver to see if it is Garmin */
@@ -512,9 +338,9 @@ garmin_usb_device (GIOChannel *channel,
 						   NULL);
 
 		if (status != G_IO_STATUS_NORMAL) {
-			g_warning ("GARMIN: Error writing \"Private Info Req\" packet:\n%s", 
+			g_warning ("GARMIN: Error writing \"Private Info Req\" packet:\n%s",
 				   g_strerror (errno));
-			return -1;
+			return FALSE;
 		}
 
 		g_io_channel_flush (channel, NULL);
@@ -529,21 +355,22 @@ garmin_usb_device (GIOChannel *channel,
 
 		if (status != G_IO_STATUS_NORMAL) {
 			g_message ("GARMIN: Error reading \"Private Info Resp\" packet: %s", g_strerror (errno));
-			return 0;
+			return TRUE;
 		}
 
 		if ((privcmd[0] == GARMIN_LAYERID_PRIVATE) &&
 		    (privcmd[1] == GARMIN_PRIV_PKTID_INFO_RESP)) {
 			/* we're talking to the Garmin driver */
 			g_debug ("GARMIN: device type confirmed");
-			return 1;
+			*device_is_garmin = TRUE;
+			return TRUE;
 		} else {
 			g_message ("GARMIN: \"Private Info Resp\" packet data not recognized");
-			return 0;
+			return TRUE;
 		}
-	} else {
-		return 0;
 	}
+
+	return TRUE;
 }
 
 static gboolean
@@ -617,46 +444,42 @@ gps_channel_connect (GIOChannel  *channel,
 		     gpointer     userdata)
 {
 	GypsyClientPrivate *priv;
-	int ret;
+	gboolean ret, device_is_garmin;
 
 	priv = GET_PRIVATE (userdata);
 
 	g_debug ("GPS channel can connect");
 
-	ret = 0;
-	if (priv->type == GYPSY_DEVICE_TYPE_SERIAL)
-		ret = garmin_usb_device (channel, priv->device_path);
-
-	switch (ret) {
-	case 1:
-		/* the device *IS* a Garmin -- we must do translation to NMEA */
-		priv->type = GYPSY_DEVICE_TYPE_GARMIN;
-		garmin_init (channel);
-		priv->input_id = g_io_add_watch_full (priv->channel, 
-						      G_PRIORITY_HIGH_IDLE,
-						      G_IO_IN | G_IO_PRI,
-						      gps_channel_garmin_input,
-						      userdata, NULL);
-		break;
-
-	case 0:
-		/* the device is *NOT* a Garmin -- the data is NMEA */
-		priv->input_id = g_io_add_watch_full (priv->channel, 
-						      G_PRIORITY_HIGH_IDLE,
-						      G_IO_IN | G_IO_PRI,
-						      gps_channel_input, 
-						      userdata, NULL);
-		break;
-
-	case -1:
-		/* we got an error trying to figure it out */
-		g_warning ("Error determining device type for %s", 
-			   priv->device_path);
-		/* g_set_error () has already been called */
-		break;
+	ret = FALSE;
+	device_is_garmin = FALSE;
+	if (priv->type == GYPSY_DEVICE_TYPE_SERIAL) {
+		ret = garmin_usb_device (channel, priv->device_path,
+					 &device_is_garmin);
+		if (ret == FALSE) {
+			/* we got an error trying to figure it out */
+			g_warning ("Error determining device type for %s",
+				   priv->device_path);
+			/* g_set_error () has already been called */
+			goto end;
+		}
 	}
 
-	g_signal_emit (G_OBJECT (userdata), signals[CONNECTION_CHANGED], 
+	if (device_is_garmin) {
+		priv->type = GYPSY_DEVICE_TYPE_GARMIN;
+		priv->parser = gypsy_garmin_parser_new (GYPSY_CLIENT (userdata));
+		garmin_init (channel);
+	} else {
+		priv->parser = gypsy_nmea_parser_new (GYPSY_CLIENT (userdata));
+	}
+
+	priv->input_id = g_io_add_watch_full (priv->channel,
+					      G_PRIORITY_HIGH_IDLE,
+					      G_IO_IN | G_IO_PRI,
+					      gps_channel_input,
+					      userdata, NULL);
+
+end:
+	g_signal_emit (G_OBJECT (userdata), signals[CONNECTION_CHANGED],
 		       0, TRUE);
 
 	priv->connect_id = 0;
@@ -728,8 +551,6 @@ gypsy_client_start (GypsyClient *client,
 	GIOStatus status;
 
 	priv = GET_PRIVATE (client);
-
-	priv->chars_in_buffer = 0;
 
 	if (priv->fd != -1) {
 		g_debug ("Connection to %s already started", priv->device_path);
@@ -837,7 +658,7 @@ gypsy_client_start (GypsyClient *client,
 		return FALSE;
 	}
 
-	priv->error_id = g_io_add_watch_full (priv->channel, 
+	priv->error_id = g_io_add_watch_full (priv->channel,
 					      G_PRIORITY_HIGH_IDLE,
 					      G_IO_ERR | G_IO_HUP,
 					      gps_channel_error, client, NULL);
@@ -1056,7 +877,6 @@ finalize (GObject *object)
 	shutdown_connection ((GypsyClient *) object);
 
 	g_free (priv->device_path);
-	g_free (priv->ctxt);
 
 	((GObjectClass *) gypsy_client_parent_class)->finalize (object);
 }
@@ -1226,9 +1046,9 @@ gypsy_client_init (GypsyClient *client)
 	priv->fd = -1;
 	priv->type = GYPSY_DEVICE_TYPE_UNKNOWN;
 	priv->baudrate = B0;
-	priv->ctxt = nmea_parse_context_new (client);
 	priv->timestamp = 0;
 	priv->last_alt_timestamp = 0;
+	priv->parser = NULL;
 }
 
 void

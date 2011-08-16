@@ -79,7 +79,7 @@ split_sentence (const char   *sentence,
 			fields[field_count] = begin;
 			field_count++;
 			break;
-		}				
+		}
 	}
 
 	return field_count;
@@ -110,7 +110,7 @@ calculate_latitude (const char *value,
 	minutes = strtod (&(value[2]), NULL);
 
 	dd = (float) degrees + (minutes / 60.0);
-	
+
 	if (direction && *direction == 'S') {
 		dd *= -1;
 	}
@@ -150,7 +150,7 @@ calculate_longitude (const char *value,
 	minutes = strtod (&(value[3]), NULL);
 
 	dd = (float) degrees + (minutes / 60.0);
-	
+
 	if (direction && *direction == 'W') {
 		dd *= -1;
 	}
@@ -223,7 +223,7 @@ calculate_timestamp (NMEAParseContext *ctxt,
 		return 0;
 	}
 
-	hours = g_ascii_digit_value (utc_time[0]) * 10 + 
+	hours = g_ascii_digit_value (utc_time[0]) * 10 +
 		g_ascii_digit_value (utc_time[1]);
 	minutes = g_ascii_digit_value (utc_time[2]) * 10 +
 		g_ascii_digit_value (utc_time[3]);
@@ -251,7 +251,7 @@ calculate_datestamp (NMEAParseContext *ctxt,
 		g_ascii_digit_value (date_str[1]);
 	month = g_ascii_digit_value (date_str[2]) * 10 +
 		g_ascii_digit_value (date_str[3]);
-	year = BASE_CENTURY + (g_ascii_digit_value (date_str[4]) * 10 + 
+	year = BASE_CENTURY + (g_ascii_digit_value (date_str[4]) * 10 +
 			       g_ascii_digit_value (date_str[5]));
 
 	g_date_set_dmy (ctxt->date, day, month, year);
@@ -284,14 +284,14 @@ parse_gsv (NMEAParseContext *ctxt,
 {
 	int field_count, message_number, i;
 
-	field_count = split_sentence (data, ctxt->fields.gsv_fields, 
+	field_count = split_sentence (data, ctxt->fields.gsv_fields,
 				      GSV_FIELDS);
-	
+
 #ifdef SHOTGUN_DEBUGGING
 	{
 		int i;
 
-		g_debug ("GSV: Got %d fields, wanted %d", 
+		g_debug ("GSV: Got %d fields, wanted %d",
 			 field_count, GSV_FIELDS);
 		for (i = 0; i < field_count; i++) {
 			g_debug ("[%d] - %s", i, GSV_FIELD (i));
@@ -339,7 +339,7 @@ parse_gsv (NMEAParseContext *ctxt,
 		}
 
 		id = atoi (GSV_FIELD (i));
-		elevation = IS_EMPTY (GSV_FIELD (i + 1)) ? 0 : 
+		elevation = IS_EMPTY (GSV_FIELD (i + 1)) ? 0 :
 			atoi (GSV_FIELD (i + 1));
 		azimuth = IS_EMPTY (GSV_FIELD (i + 2)) ? 0 :
 			atoi (GSV_FIELD (i + 2));
@@ -363,7 +363,7 @@ parse_gsv (NMEAParseContext *ctxt,
 		gypsy_client_set_satellites (ctxt->client);
 		ctxt->message_count = 0;
 	}
-	
+
 	return TRUE;
 }
 
@@ -385,14 +385,14 @@ parse_gsa (NMEAParseContext *ctxt,
 	int field_count;
 	int sat_count, i;
 
-	field_count = split_sentence (data, ctxt->fields.gsa_fields, 
+	field_count = split_sentence (data, ctxt->fields.gsa_fields,
 				      GSA_FIELDS);
 
 #ifdef SHOTGUN_DEBUGGING
 	{
 		int i;
 
-		g_debug ("GSA: Got %d fields, wanted %d", 
+		g_debug ("GSA: Got %d fields, wanted %d",
 			 field_count, GSA_FIELDS);
 		for (i = 0; i < GSA_FIELDS; i++) {
 			g_debug ("[%d] - %s", i, GSA_FIELD (i));
@@ -458,7 +458,7 @@ parse_gga (NMEAParseContext *ctxt,
 	FixType fix_type;
 	int timestamp;
 
-	field_count = split_sentence (data, ctxt->fields.gga_fields, 
+	field_count = split_sentence (data, ctxt->fields.gga_fields,
 				      GGA_FIELDS);
 
 #ifdef SHOTGUN_DEBUGGING
@@ -486,7 +486,7 @@ parse_gga (NMEAParseContext *ctxt,
 	longitude = calculate_longitude (GGA_FIELD(3), GGA_FIELD(4), &fields);
 	altitude = calculate_altitude (GGA_FIELD(8), &fields);
 
-	gypsy_client_set_position (ctxt->client, fields, latitude, 
+	gypsy_client_set_position (ctxt->client, fields, latitude,
 				   longitude, altitude);
 
 	/* We can fake the fix type here by checking what fields are set */
@@ -504,7 +504,7 @@ parse_gga (NMEAParseContext *ctxt,
 
 	gypsy_client_set_accuracy (ctxt->client, ACCURACY_HORIZONTAL,
 				   0, g_strtod (GGA_FIELD(7), NULL), 0);
-	
+
 	return TRUE;
 }
 
@@ -536,14 +536,14 @@ parse_rmc (NMEAParseContext *ctxt,
 	float latitude, longitude;
 	float speed, direction;
 
-	field_count = split_sentence (data, ctxt->fields.rmc_fields, 
+	field_count = split_sentence (data, ctxt->fields.rmc_fields,
 				      RMC_FIELDS);
 
 #ifdef SHOTGUN_DEBUGGING
 	{
 		int i;
 
-		g_debug ("RMC: Got %d fields, wanted %d", 
+		g_debug ("RMC: Got %d fields, wanted %d",
 			 field_count, RMC_FIELDS);
 		for (i = 0; i < RMC_FIELDS; i++) {
 			g_debug ("[%d] - %s", i, RMC_FIELD(i));
@@ -558,17 +558,17 @@ parse_rmc (NMEAParseContext *ctxt,
 	ctxt->datestamp = calculate_datestamp (ctxt, RMC_FIELD(8));
 
 	/* Calculate the timestamp first */
-	gypsy_client_set_timestamp (ctxt->client, 
+	gypsy_client_set_timestamp (ctxt->client,
 				    calculate_timestamp (ctxt, RMC_FIELD(0)));
 
 	/* RMC gives us Latitude and Longitude so we check them as well */
 	position_fields = POSITION_NONE;
-	latitude = calculate_latitude (RMC_FIELD(2), RMC_FIELD(3), 
+	latitude = calculate_latitude (RMC_FIELD(2), RMC_FIELD(3),
 				       &position_fields);
 	longitude = calculate_longitude (RMC_FIELD(4), RMC_FIELD(5),
 					 &position_fields);
 
-	gypsy_client_set_position (ctxt->client, position_fields, latitude, 
+	gypsy_client_set_position (ctxt->client, position_fields, latitude,
 				   longitude, 0.0);
 
 	if (*RMC_FIELD(1) == 'A') {
@@ -581,9 +581,9 @@ parse_rmc (NMEAParseContext *ctxt,
 	speed = calculate_speed (RMC_FIELD(6), &course_fields);
 	direction = calculate_direction (RMC_FIELD(7), &course_fields);
 
-	gypsy_client_set_course (ctxt->client, course_fields, speed, 
+	gypsy_client_set_course (ctxt->client, course_fields, speed,
 				 direction, 0.0);
-	
+
 	return TRUE;
 }
 
@@ -621,7 +621,7 @@ parse_tag (NMEAParseContext *ctxt,
 
    check_checksum takes the sentence at the first character after the
    beginning $ and checks the checksum. If there is no checksum
-   value found, it returns TRUE 
+   value found, it returns TRUE
 
    NB: Modifies the original sentence by replacing * with \0 */
 static gboolean
@@ -652,7 +652,7 @@ check_checksum (char *sentence)
 		return FALSE;
 	}
 }
-	
+
 /* Sigh: Standard NMEA tags are 5 chars, but weird proprietry devices
    can emit longer */
 #define TAG_LENGTH 12

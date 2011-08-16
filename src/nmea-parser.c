@@ -521,6 +521,9 @@ parse_gga (NMEAParseContext *ctxt,
    9) Magnetic Variation, degrees
    10) E or W
    11) FAA mode indicator (NMEA 2.3 and later, optional)
+
+   Although there are 12 fields, the final one is optional and we don't attempt
+   to parse it, so RMC_FIELDS is actually set to 11
 */
 #define RMC_FIELD(x) (ctxt->fields.rmc_fields[x])
 static gboolean

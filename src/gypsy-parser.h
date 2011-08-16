@@ -42,19 +42,19 @@ struct _GypsyParserClass
 {
     GObjectClass parent_class;
 
-    gboolean (*received_data) (GypsyParser  *parser,
-                               const guchar *data,
-                               gsize         length,
-                               GError      **error);
-    gsize (*get_space_in_buffer) (GypsyParser *parser);
+    gboolean (*received_data) (GypsyParser *parser,
+                               gsize        length,
+                               GError     **error);
+    gsize (*get_buffer) (GypsyParser *parser,
+                         char       **buffer);
 };
 
 GType gypsy_parser_get_type (void) G_GNUC_CONST;
-gboolean gypsy_parser_received_data (GypsyParser  *parser,
-                                     const guchar *data,
-                                     guint         length,
-                                     GError      **error);
-gsize gypsy_parser_get_space_in_buffer (GypsyParser *parser);
+gboolean gypsy_parser_received_data (GypsyParser *parser,
+                                     guint        length,
+                                     GError     **error);
+gsize gypsy_parser_get_buffer (GypsyParser *parser,
+                               char       **buffer);
 GypsyClient *gypsy_parser_get_client (GypsyParser *parser);
 
 G_END_DECLS

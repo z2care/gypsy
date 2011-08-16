@@ -90,7 +90,7 @@ typedef struct _GypsyClientPrivate {
 	GypsyDeviceType type;
 
 	GIOChannel *channel; /* The channel we talk to the GPS on */
-	GIOChannel *debug_log; /* The channel to write the NMEA to, 
+	GIOChannel *debug_log; /* The channel to write the NMEA to,
 				  or NULL if debugging is off */
 
 	guint32 error_id, connect_id, input_id;
@@ -275,15 +275,15 @@ gps_channel_input (GIOChannel  *channel,
 {
 	GypsyClientPrivate *priv;
 	GIOStatus status;
-	char buf[READ_BUFFER_SIZE];
+	char *buf;
 	gsize chars_left_in_buffer, chars_read;
 	GError *error = NULL;
 
 	priv = GET_PRIVATE (userdata);
 
-	chars_left_in_buffer = gypsy_parser_get_space_in_buffer (priv->parser);
+	chars_left_in_buffer = gypsy_parser_get_buffer (priv->parser, &buf);
 	status = g_io_channel_read_chars (priv->channel,
-					  buf,
+					  (char *) buf,
 					  chars_left_in_buffer,
 					  &chars_read,
 					  NULL);
@@ -294,8 +294,7 @@ gps_channel_input (GIOChannel  *channel,
 	}
 
 	if (status == G_IO_STATUS_NORMAL) {
-		gypsy_parser_received_data (priv->parser,
-					    (guchar *)buf, chars_read, NULL);
+		gypsy_parser_received_data (priv->parser, chars_read, NULL);
 	} else {
 		g_warning ("Read error: %s", g_strerror (errno));
 		g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));

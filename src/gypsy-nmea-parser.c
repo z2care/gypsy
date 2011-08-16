@@ -34,8 +34,8 @@
 struct _GypsyNmeaParserPrivate {
     NMEAParseContext *ctxt;
 
-    char sentence[READ_BUFFER_SIZE + 1]; /* This is for building
-                                            the NMEA sentence */
+    char buffer[READ_BUFFER_SIZE + 1]; /* This is for building
+                                          the NMEA sentence */
     gsize chars_in_buffer; /* How many characters are in the buffer */
 };
 
@@ -91,28 +91,26 @@ gypsy_nmea_parser_constructor (GType                  type,
 }
 
 static gboolean
-gypsy_nmea_parser_received_data (GypsyParser  *parser,
-                                 const guchar *data,
-                                 gsize         length,
-                                 GError      **error)
+gypsy_nmea_parser_received_data (GypsyParser *parser,
+                                 gsize        length,
+                                 GError     **error)
 {
     GypsyNmeaParser *nmea = GYPSY_NMEA_PARSER (parser);
     GypsyNmeaParserPrivate *priv = nmea->priv;
     char *eos = NULL;
 
-    memcpy (priv->sentence + priv->chars_in_buffer, data, length);
     priv->chars_in_buffer += length;
 
     /* Append a '\0' to the data so we never run off the end.
        The '\0' will be overwritten by the next call to received_data */
-    *(priv->sentence + priv->chars_in_buffer) = '\0';
+    *(priv->buffer + priv->chars_in_buffer) = '\0';
 
     /* NMEA sentences end with <CR><LF>,
        so find the <CR> at the end of each sentence */
-    while ((eos = strchr (priv->sentence, '\r'))) {
+    while ((eos = strchr (priv->buffer, '\r'))) {
         int sentence_length;
         /* Account for <LF> */
-        sentence_length = (eos - priv->sentence) + 2;
+        sentence_length = (eos - priv->buffer);
 
         if (*(eos + 1) == '\n') {
             sentence_length += 2;
@@ -124,16 +122,16 @@ gypsy_nmea_parser_received_data (GypsyParser  *parser,
             /* terminate the string at the <CR> */
             *eos = '\0';
 
-            g_debug ("NMEA sentence: %s", priv->sentence);
-            if (nmea_parse_sentence (priv->ctxt, priv->sentence, NULL) == FALSE) {
-                g_debug ("Invalid sentence: %s", priv->sentence);
+            g_debug ("NMEA sentence: %s", priv->buffer);
+            if (nmea_parse_sentence (priv->ctxt, priv->buffer, NULL) == FALSE) {
+                g_debug ("Invalid sentence: %s", priv->buffer);
             }
         }
 
         if (sentence_length > 0) {
             /* Remove the sentence from the buffer and
                move the rest up including terminating 0 */
-            memmove (priv->sentence, eos + 2,
+            memmove (priv->buffer, eos + 2,
                      (priv->chars_in_buffer - sentence_length) + 1);
             priv->chars_in_buffer -= sentence_length;
         }
@@ -143,11 +141,13 @@ gypsy_nmea_parser_received_data (GypsyParser  *parser,
 }
 
 static gsize
-gypsy_nmea_parser_get_space_in_buffer (GypsyParser *parser)
+gypsy_nmea_parser_get_buffer (GypsyParser *parser,
+                              gchar      **buffer)
 {
     GypsyNmeaParser *nmea = GYPSY_NMEA_PARSER (parser);
     GypsyNmeaParserPrivate *priv = nmea->priv;
 
+    *buffer = (priv->buffer + priv->chars_in_buffer);
     return READ_BUFFER_SIZE - priv->chars_in_buffer;
 }
 
@@ -162,7 +162,7 @@ gypsy_nmea_parser_class_init (GypsyNmeaParserClass *klass)
     o_class->constructor = gypsy_nmea_parser_constructor;
 
     p_class->received_data = gypsy_nmea_parser_received_data;
-    p_class->get_space_in_buffer = gypsy_nmea_parser_get_space_in_buffer;
+    p_class->get_buffer = gypsy_nmea_parser_get_buffer;
 
     g_type_class_add_private (klass, sizeof (GypsyNmeaParserPrivate));
 }

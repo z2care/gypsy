@@ -64,7 +64,7 @@
 #define READ_BUFFER_SIZE 1024
 
 struct _GypsyGarminParserPrivate {
-    guchar sentence[READ_BUFFER_SIZE];
+    char buffer[READ_BUFFER_SIZE];
     gsize bytes_in_buffer;
 
     GDate *epoch;
@@ -224,10 +224,9 @@ calculate_speed_course (GypsyGarminParser  *parser,
 }
 
 static gboolean
-gypsy_garmin_parser_received_data (GypsyParser   *parser,
-                                   const guchar  *data,
-                                   gsize          length,
-                                   GError       **error)
+gypsy_garmin_parser_received_data (GypsyParser *parser,
+                                   gsize        length,
+                                   GError     **error)
 {
     GypsyGarminParser *garmin = GYPSY_GARMIN_PARSER (parser);
     GypsyGarminParserPrivate *priv = garmin->priv;
@@ -237,10 +236,9 @@ gypsy_garmin_parser_received_data (GypsyParser   *parser,
 
     client = gypsy_parser_get_client (parser);
 
-    memcpy (priv->sentence + priv->bytes_in_buffer, data, length);
     priv->bytes_in_buffer += length;
 
-    pGpkt = (G_Packet_t*) priv->sentence;
+    pGpkt = (G_Packet_t*) priv->buffer;
     pktlen = GARMIN_HEADER_SIZE + pGpkt->mDataSize;
     while ((priv->bytes_in_buffer >= GARMIN_HEADER_SIZE) &&
            (priv->bytes_in_buffer >= pktlen)) {
@@ -316,7 +314,7 @@ gypsy_garmin_parser_received_data (GypsyParser   *parser,
         /* now that we're done with this packet,
            move any remaining data up to the
            beginning of the buffer */
-        memmove (priv->sentence, priv->sentence + pktlen,
+        memmove (priv->buffer, priv->buffer + pktlen,
                  priv->bytes_in_buffer - pktlen);
         priv->bytes_in_buffer -= pktlen;
     }
@@ -325,11 +323,13 @@ gypsy_garmin_parser_received_data (GypsyParser   *parser,
 }
 
 static gsize
-gypsy_garmin_parser_get_space_in_buffer (GypsyParser *parser)
+gypsy_garmin_parser_get_buffer (GypsyParser *parser,
+                                char       **buffer)
 {
     GypsyGarminParser *garmin = GYPSY_GARMIN_PARSER (parser);
     GypsyGarminParserPrivate *priv = garmin->priv;
 
+    *buffer = (priv->buffer + priv->bytes_in_buffer);
     return READ_BUFFER_SIZE - priv->bytes_in_buffer;
 }
 
@@ -343,7 +343,7 @@ gypsy_garmin_parser_class_init (GypsyGarminParserClass *klass)
     o_class->finalize = gypsy_garmin_parser_finalize;
 
     p_class->received_data = gypsy_garmin_parser_received_data;
-    p_class->get_space_in_buffer = gypsy_garmin_parser_get_space_in_buffer;
+    p_class->get_buffer = gypsy_garmin_parser_get_buffer;
 
     g_type_class_add_private (klass, sizeof (GypsyGarminParserPrivate));
 }

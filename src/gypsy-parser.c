@@ -101,10 +101,9 @@ gypsy_parser_init (GypsyParser *self)
 }
 
 gboolean
-gypsy_parser_received_data (GypsyParser  *parser,
-                            const guchar *data,
-                            guint         length,
-                            GError      **error)
+gypsy_parser_received_data (GypsyParser *parser,
+                            guint        length,
+                            GError     **error)
 {
     GypsyParserClass *klass = GYPSY_PARSER_GET_CLASS (parser);
 
@@ -114,21 +113,22 @@ gypsy_parser_received_data (GypsyParser  *parser,
         return FALSE;
     }
 
-    return klass->received_data (parser, data, length, error);
+    return klass->received_data (parser, length, error);
 }
 
 gsize
-gypsy_parser_get_space_in_buffer (GypsyParser *parser)
+gypsy_parser_get_buffer (GypsyParser *parser,
+                         char       **buffer)
 {
     GypsyParserClass *klass = GYPSY_PARSER_GET_CLASS (parser);
 
-    if (klass->get_space_in_buffer == NULL) {
+    if (klass->get_buffer == NULL) {
         g_error ("%s does not implement get_space_in_buffer",
                  G_OBJECT_TYPE_NAME (parser));
         return FALSE;
     }
 
-    return klass->get_space_in_buffer (parser);
+    return klass->get_buffer (parser, buffer);
 }
 
 GypsyClient *

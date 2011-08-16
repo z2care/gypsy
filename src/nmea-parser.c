@@ -299,7 +299,11 @@ parse_gsv (NMEAParseContext *ctxt,
 	}
 #endif
 
-	if (field_count < GSV_FIELDS)
+#if 0
+	if (field_count < GSV_FIELDS && field_count != 11)
+		return FALSE;
+#endif
+	if ((field_count - 3) % 4 != 0)
 		return FALSE;
 
 	message_number = atoi (GSV_FIELD (1));

@@ -113,6 +113,13 @@ gypsy_nmea_parser_received_data (GypsyParser  *parser,
         int sentence_length;
         /* Account for <LF> */
         sentence_length = (eos - priv->sentence) + 2;
+
+        if (*(eos + 1) == '\n') {
+            sentence_length += 2;
+        } else {
+            sentence_length += 1;
+        }
+
         if (sentence_length > 1) {
             /* terminate the string at the <CR> */
             *eos = '\0';

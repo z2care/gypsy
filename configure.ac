@@ -10,7 +10,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_PROG_CC
 AM_PROG_LIBTOOL
 
-GYPSY_PC_MODULES='glib-2.0 dbus-glib-1 >= 0.60'
+GYPSY_PC_MODULES='glib-2.0 dbus-glib-1 >= 0.60 gudev-1.0'
 
 AC_ARG_ENABLE(bluetooth, AC_HELP_STRING([--disable-bluetooth],[Enable support for Bluetooth GPS devices]),, enable_bluetooth=yes)
 

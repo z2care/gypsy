@@ -40,6 +40,7 @@
 #include <dbus/dbus-glib-bindings.h>
 
 #include "gypsy-debug.h"
+#include "gypsy-discovery.h"
 #include "gypsy-server.h"
 
 #define GYPSY_NAME "org.freedesktop.Gypsy"
@@ -121,6 +122,7 @@ main (int    argc,
 	GError *error = NULL;
 	guint32 request_name_ret;
 	GypsyServer *gypsy;
+	GypsyDiscovery *discovery;
 	gboolean become_daemon = FALSE;
 	char *pidfile = NULL;
 	char *user_pidfile = NULL;
@@ -221,6 +223,10 @@ main (int    argc,
 
 	dbus_g_connection_register_g_object (conn, "/org/freedesktop/Gypsy", G_OBJECT (gypsy));
 
+	discovery = g_object_new (GYPSY_TYPE_DISCOVERY, NULL);
+	dbus_g_connection_register_g_object (conn,
+					     "/org/freedesktop/Gypsy/Discovery",
+					     G_OBJECT (discovery));
 	g_main_loop_run (mainloop);
 
 	return 0;

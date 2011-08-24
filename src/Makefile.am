@@ -16,6 +16,7 @@ gypsy_daemon_LDADD =		\
 NOINST_H_FILES =		\
 	gypsy-client.h		\
 	gypsy-debug.h		\
+	gypsy-discovery.h	\
 	gypsy-garmin-parser.h	\
 	gypsy-marshal-internal.h	\
 	gypsy-nmea-parser.h	\
@@ -27,6 +28,7 @@ NOINST_H_FILES =		\
 
 gypsy_daemon_SOURCES =		\
 	gypsy-client.c		\
+	gypsy-discovery.c	\
 	gypsy-garmin-parser.c	\
 	gypsy-marshal-internal.c	\
 	gypsy-nmea-parser.c	\
@@ -40,6 +42,7 @@ BUILT_SOURCES =			\
 	gypsy-marshal-internal.c	\
 	gypsy-marshal-internal.h	\
 	gypsy-client-glue.h	\
+	gypsy-discovery-glue.h	\
 	gypsy-server-glue.h
 
 EXTRA_DIST = gypsy-marshal.list \
@@ -58,3 +61,6 @@ gypsy-server-glue.h: ../interfaces/gypsy-server.xml
 
 gypsy-client-glue.h: ../interfaces/gypsy-client.xml
 	$(AM_V_GEN)$(DBUS_BINDING_TOOL) --prefix=gypsy_client --mode=glib-server $< > $@
+
+gypsy-discovery-glue.h: ../interfaces/gypsy-discovery.xml
+	$(AM_V_GEN)$(DBUS_BINDING_TOOL) --prefix=gypsy_discovery --mode=glib-server $< > $@

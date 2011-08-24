@@ -4,7 +4,8 @@ BUILT_SOURCES = 		\
 	gypsy-marshal.c		\
 	gypsy-marshal.h		\
 	gypsy-server-bindings.h	\
-	gypsy-client-bindings.h
+	gypsy-client-bindings.h \
+	gypsy-discovery-bindings.h
 
 libgypsy_la_SOURCES = 		\
 	$(BUILT_SOURCES)	\
@@ -13,6 +14,7 @@ libgypsy_la_SOURCES = 		\
 	gypsy-control.c		\
 	gypsy-course.c		\
 	gypsy-device.c		\
+	gypsy-discovery.c	\
 	gypsy-position.c	\
 	gypsy-satellite.c	\
 	gypsy-time.c
@@ -30,6 +32,7 @@ gypsy_headers =			\
 	gypsy-control.h		\
 	gypsy-course.h		\
 	gypsy-device.h		\
+	gypsy-discovery.h	\
 	gypsy-position.h	\
 	gypsy-satellite.h	\
 	gypsy-time.h

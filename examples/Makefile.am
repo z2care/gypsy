@@ -1,7 +1,12 @@
 noinst_PROGRAMS = 				\
+	list-known-gps-devices			\
 	simple-gps-dbus				\
 	simple-gps-gypsy			\
 	simple-gps-satellites
+
+list_known_gps_devices_SOURCES = list-known-gps-devices.c
+list_known_gps_devices_LDADD = $(GYPSY_LIBS) $(top_builddir)/gypsy/libgypsy.la
+list_known_gps_devices_CFLAGS = $(GYPSY_CFLAGS) -I$(top_srcdir)
 
 simple_gps_dbus_SOURCES = simple-gps-dbus.c
 simple_gps_dbus_LDADD = $(GYPSY_LIBS)

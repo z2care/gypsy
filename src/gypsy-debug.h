@@ -16,14 +16,14 @@ extern guint gypsy_debug_flags;
 #ifdef __GNUC__
 
 #define GYPSY_NOTE(type,x,a...) G_STMT_START {                    \
-        if (G_UNLIKELY (CLUTTER_HAS_DEBUG (type)))                      \
+        if (G_UNLIKELY (GYPSY_HAS_DEBUG (type)))                      \
             { _gypsy_message ("[" #type "] " G_STRLOC ": " x, ##a); }   \
     } G_STMT_END
 
 #else /* !__GNUC__ */
 
 #define GYPSY_NOTE(type,...) G_STMT_START { \
-        if (G_UNLIKELY (CLUTTER_HAS_DEBUG (type))) {       \
+        if (G_UNLIKELY (GYPSY_HAS_DEBUG (type))) {       \
             char *_fmt = g_strdup_printf (__VA_ARGS__);         \
             _gypsy_message ("[" #type "] " G_STRLOC ": %s", _fmt);      \
             g_free (_fmt);                                              \

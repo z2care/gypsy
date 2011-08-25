@@ -60,6 +60,7 @@
 #include <dbus/dbus-glib-bindings.h>
 
 #include "gypsy-client.h"
+#include "gypsy-debug.h"
 #include "gypsy-marshal-internal.h"
 #include "gypsy-parser.h"
 #include "gypsy-garmin-parser.h"
@@ -242,7 +243,7 @@ shutdown_connection (GypsyClient *client)
 #ifdef ENABLE_N810
 	/* Turn off the N810's GPS device */
 	if (g_ascii_strcasecmp (priv->device_path, N810_INTERNAL_GPS_PATH) == 0) {
-		g_debug ("N810 chip off");
+		GYPSY_NOTE (CLIENT, "N810 chip off");
 		gpsctrl_set_chip_off ();
 	}
 #endif /* ENABLE_N810 */
@@ -259,7 +260,7 @@ gps_channel_error (GIOChannel  *channel,
 	client = (GypsyClient *) userdata;
 	priv = GET_PRIVATE (userdata);
 
-	g_debug ("Error on connection to %s", priv->device_path);
+	GYPSY_NOTE (CLIENT, "Error on connection to %s", priv->device_path);
 	shutdown_connection ((GypsyClient *) userdata);
 
 	g_signal_emit (G_OBJECT (client), signals[CONNECTION_CHANGED],
@@ -296,7 +297,7 @@ gps_channel_input (GIOChannel  *channel,
 	if (status == G_IO_STATUS_NORMAL) {
 		gypsy_parser_received_data (priv->parser, chars_read, NULL);
 	} else {
-		g_warning ("Read error: %s", g_strerror (errno));
+		GYPSY_NOTE (CLIENT, "Read error: %s", g_strerror (errno));
 		g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));
 	}
 
@@ -360,11 +361,11 @@ garmin_usb_device (GIOChannel *channel,
 		if ((privcmd[0] == GARMIN_LAYERID_PRIVATE) &&
 		    (privcmd[1] == GARMIN_PRIV_PKTID_INFO_RESP)) {
 			/* we're talking to the Garmin driver */
-			g_debug ("GARMIN: device type confirmed");
+			GYPSY_NOTE (CLIENT, "GARMIN: device type confirmed");
 			*device_is_garmin = TRUE;
 			return TRUE;
 		} else {
-			g_message ("GARMIN: \"Private Info Resp\" packet data not recognized");
+			GYPSY_NOTE (CLIENT, "GARMIN: \"Private Info Resp\" packet data not recognized");
 			return TRUE;
 		}
 	}
@@ -381,7 +382,7 @@ garmin_init (GIOChannel *channel)
 	GError *error = NULL;
 	G_Packet_t *pvtpack;
 
-	g_debug ("GARMIN: initialize device");
+	GYPSY_NOTE (CLIENT, "GARMIN: initialize device");
 
 	/* set the device driver mode to "native" */
 	/* (without this, the device will not talk to us) */
@@ -398,7 +399,7 @@ garmin_init (GIOChannel *channel)
 					   NULL);
 
 	if (status != G_IO_STATUS_NORMAL) {
-		g_warning ("GARMIN: Error writing \"Private Set Mode\" packet:\n%s", g_strerror (errno));
+		GYPSY_NOTE (CLIENT, "GARMIN: Error writing \"Private Set Mode\" packet:\n%s", g_strerror (errno));
 		g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));
 		return FALSE;
 	}
@@ -425,7 +426,7 @@ garmin_init (GIOChannel *channel)
 					   NULL);
 
 	if (status != G_IO_STATUS_NORMAL) {
-		g_warning ("GARMIN: Error writing \"Start PVT Transfer\" packet:\n%s", g_strerror (errno));
+		GYPSY_NOTE (CLIENT, "GARMIN: Error writing \"Start PVT Transfer\" packet:\n%s", g_strerror (errno));
 		g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));
 		return FALSE;
 	}
@@ -447,7 +448,7 @@ gps_channel_connect (GIOChannel  *channel,
 
 	priv = GET_PRIVATE (userdata);
 
-	g_debug ("GPS channel can connect");
+	GYPSY_NOTE (CLIENT, "GPS channel can connect");
 
 	ret = FALSE;
 	device_is_garmin = FALSE;
@@ -456,8 +457,9 @@ gps_channel_connect (GIOChannel  *channel,
 					 &device_is_garmin);
 		if (ret == FALSE) {
 			/* we got an error trying to figure it out */
-			g_warning ("Error determining device type for %s",
-				   priv->device_path);
+			GYPSY_NOTE (CLIENT,
+				    "Error determining device type for %s",
+				    priv->device_path);
 			/* g_set_error () has already been called */
 			goto end;
 		}
@@ -528,13 +530,16 @@ gypsy_client_set_start_options (GypsyClient *client,
 				priv->baudrate = B115200;
 				break;
 			default:
-				g_warning ("Unsupported baud rate '%d'", rate);
+				GYPSY_NOTE (CLIENT,
+					    "Unsupported baud rate '%d'",
+					    rate);
 				g_set_error (error, GYPSY_ERROR, 0, "Unsupported baud rate '%d'", rate);
 				g_list_free (keys);
 				return FALSE;
 			}
 		} else {
-			g_message ("Unsupported option key '%s'", l->data);
+			GYPSY_NOTE (CLIENT,
+				    "Unsupported option key '%s'", l->data);
 		}
 	}
 	g_list_free (keys);
@@ -552,17 +557,19 @@ gypsy_client_start (GypsyClient *client,
 	priv = GET_PRIVATE (client);
 
 	if (priv->fd != -1) {
-		g_debug ("Connection to %s already started", priv->device_path);
+		GYPSY_NOTE (CLIENT, "Connection to %s already started",
+			       priv->device_path);
 		return TRUE;
 	}
 	else {
-		g_debug ("Starting connection to %s", priv->device_path);
+		GYPSY_NOTE (CLIENT, "Starting connection to %s",
+			       priv->device_path);
 	}
 
 	/* Enable the N810's internal GPS */
 #ifdef ENABLE_N810
 		if (g_ascii_strcasecmp (priv->device_path, N810_INTERNAL_GPS_PATH) == 0) {
-			g_debug ("N810 chip on");
+			GYPSY_NOTE (CLIENT, "N810 chip on");
 			gpsctrl_set_chip_on ();
 		}
 #endif /* ENABLE_N810 */
@@ -711,7 +718,7 @@ gypsy_client_stop (GypsyClient *client,
 
 	priv = GET_PRIVATE (client);
 
-	g_debug ("Stopping connection to %s", priv->device_path);
+	GYPSY_NOTE (CLIENT, "Stopping connection to %s", priv->device_path);
 	shutdown_connection (client);
 
 	g_signal_emit (G_OBJECT (client), signals[CONNECTION_CHANGED],

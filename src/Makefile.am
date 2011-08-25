@@ -15,6 +15,7 @@ gypsy_daemon_LDADD =		\
 
 NOINST_H_FILES =		\
 	gypsy-client.h		\
+	gypsy-debug.h		\
 	gypsy-garmin-parser.h	\
 	gypsy-marshal-internal.h	\
 	gypsy-nmea-parser.h	\

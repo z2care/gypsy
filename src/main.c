@@ -39,6 +39,7 @@
 #include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-bindings.h>
 
+#include "gypsy-debug.h"
 #include "gypsy-server.h"
 
 #define GYPSY_NAME "org.freedesktop.Gypsy"
@@ -47,6 +48,11 @@
 static GMainLoop *mainloop;
 /* This is a bit ugly, but it works */
 char* nmea_log = NULL;
+
+guint gypsy_debug_flags = 0; /* global gypsy debug flag */
+static const GDebugKey gypsy_debug_keys[] = {
+	{ "nmea", GYPSY_DEBUG_NMEA },
+};
 
 static void
 gypsy_terminate (GObject *object,
@@ -85,6 +91,26 @@ name_owner_changed (DBusGProxy  *proxy,
 	}
 }
 
+static gboolean
+gypsy_arg_debug_cb (const char *key,
+		    const char *value,
+		    gpointer    userdata)
+{
+	gypsy_debug_flags |= g_parse_debug_string
+		(value, gypsy_debug_keys, G_N_ELEMENTS (gypsy_debug_keys));
+	return TRUE;
+}
+
+void
+_gypsy_message (const char *format, ...)
+{
+	va_list ap;
+
+	va_start (ap, format);
+	g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, ap);
+	va_end (ap);
+}
+
 int
 main (int    argc,
       char **argv)
@@ -98,13 +124,23 @@ main (int    argc,
 	gboolean become_daemon = FALSE;
 	char *pidfile = NULL;
 	char *user_pidfile = NULL;
+	const char *env_string;
 
 	GOptionEntry entries[] = {
 		{ "nmea-log", 0, 0, G_OPTION_ARG_FILENAME, &nmea_log, "Log NMEA data to FILE.[device]", "FILE" },
 		{ "no-daemon", 0, 0, G_OPTION_ARG_NONE, &become_daemon, "Don't become a daemon", NULL },
 		{ "pid-file", 0, 0, G_OPTION_ARG_FILENAME, &user_pidfile, "Specify the location of a PID file", "FILE" },
+		{ "gypsy-debug", 0, 0, G_OPTION_ARG_CALLBACK, gypsy_arg_debug_cb, "Gypsy debugging flags to set", "FLAGS" },
 		{ NULL }
 	};
+
+	env_string = g_getenv ("GYPSY_DEBUG");
+	if (env_string != NULL) {
+		gypsy_debug_flags = g_parse_debug_string
+			(env_string, gypsy_debug_keys,
+			 G_N_ELEMENTS (gypsy_debug_keys));
+		env_string = NULL;
+	}
 
 	context = g_option_context_new ("- GPS daemon");
 	g_option_context_add_main_entries (context, entries, NULL);

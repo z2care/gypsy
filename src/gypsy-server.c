@@ -35,6 +35,7 @@
 #include <dbus/dbus-glib-lowlevel.h>
 
 #include "gypsy-server.h"
+#include "gypsy-debug.h"
 #include "gypsy-client.h"
 
 enum {
@@ -111,9 +112,9 @@ gypsy_server_create (GypsyServer           *gps,
 		priv->terminate_id = 0;
 	}
 
-	g_debug ("Creating client for %s", IN_device_path);
+	GYPSY_NOTE (SERVER, "Creating client for %s", IN_device_path);
 	device_name = g_path_get_basename (IN_device_path);
-	g_debug ("Device name: %s", device_name);
+	GYPSY_NOTE (SERVER, "Device name: %s", device_name);
 	path = g_strdup_printf ("%s%s", GYPSY_GPS_PATH, 
 				g_strdelimit (device_name, ":", '_'));
 	g_free (device_name);
@@ -134,7 +135,7 @@ gypsy_server_create (GypsyServer           *gps,
 		g_object_ref (client);
 	}
 
-	g_debug ("Registered client on %s", path);
+	GYPSY_NOTE (SERVER, "Registered client on %s", path);
 
 	/* Update the hash of open connnctions */
 	sender = dbus_g_method_get_sender (context);
@@ -160,9 +161,8 @@ gypsy_server_shutdown (GypsyServer           *gps,
 
 	priv = GET_PRIVATE (gps);
 
-	g_debug ("Finding client for %s", IN_device_path);
+	GYPSY_NOTE (SERVER, "Shutting down %s", IN_device_path);
 	device_name = g_path_get_basename (IN_device_path);
-	g_debug ("Device name: %s", device_name);
 	path = g_strdup_printf ("%s%s", GYPSY_GPS_PATH, device_name);
 
 	client = (GypsyClient *) dbus_g_connection_lookup_g_object (priv->connection, path);

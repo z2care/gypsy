@@ -33,6 +33,7 @@
 #include <stdlib.h>
 
 #include "gypsy-client.h"
+#include "gypsy-debug.h"
 #include "nmea-parser.h"
 
 #define IS_EMPTY(x) ((x) == NULL || *(x) == '\0')
@@ -217,9 +218,7 @@ calculate_timestamp (NMEAParseContext *ctxt,
 	int hours, minutes, seconds;
 
 	if (ctxt->datestamp == 0) {
-#ifdef SHOTGUN_DEBUGGING
-		g_debug ("Requested timestamp before RMC was seen");
-#endif
+		GYPSY_NOTE (NMEA, "Requested timestamp before RMC was seen");
 		return 0;
 	}
 
@@ -287,17 +286,15 @@ parse_gsv (NMEAParseContext *ctxt,
 	field_count = split_sentence (data, ctxt->fields.gsv_fields,
 				      GSV_FIELDS);
 
-#ifdef SHOTGUN_DEBUGGING
 	{
 		int i;
 
-		g_debug ("GSV: Got %d fields, wanted %d",
-			 field_count, GSV_FIELDS);
+		GYPSY_NOTE (NMEA, "GSV: Got %d fields, wanted %d",
+			    field_count, GSV_FIELDS);
 		for (i = 0; i < field_count; i++) {
-			g_debug ("[%d] - %s", i, GSV_FIELD (i));
+			GYPSY_NOTE (NMEA, "[%d] - %s", i, GSV_FIELD (i));
 		}
 	}
-#endif
 
 #if 0
 	if (field_count < GSV_FIELDS && field_count != 11)
@@ -309,8 +306,9 @@ parse_gsv (NMEAParseContext *ctxt,
 	message_number = atoi (GSV_FIELD (1));
 
 	if (message_number != ctxt->message_count + 1) {
-		g_debug ("Missed message %d - got %d", ctxt->message_count + 1,
-			 message_number);
+		GYPSY_NOTE (NMEA, "Missed message %d - got %d",
+			    ctxt->message_count + 1,
+			    message_number);
 		/* We've missed a message, so clear the satellites */
 		gypsy_client_clear_satellites (ctxt->client);
 
@@ -388,17 +386,15 @@ parse_gsa (NMEAParseContext *ctxt,
 	field_count = split_sentence (data, ctxt->fields.gsa_fields,
 				      GSA_FIELDS);
 
-#ifdef SHOTGUN_DEBUGGING
 	{
 		int i;
 
-		g_debug ("GSA: Got %d fields, wanted %d",
-			 field_count, GSA_FIELDS);
+		GYPSY_NOTE (NMEA, "GSA: Got %d fields, wanted %d",
+			    field_count, GSA_FIELDS);
 		for (i = 0; i < GSA_FIELDS; i++) {
-			g_debug ("[%d] - %s", i, GSA_FIELD (i));
+			GYPSY_NOTE (NMEA, "[%d] - %s", i, GSA_FIELD (i));
 		}
 	}
-#endif
 
 	if (field_count < GSA_FIELDS)
 		return FALSE;
@@ -461,17 +457,15 @@ parse_gga (NMEAParseContext *ctxt,
 	field_count = split_sentence (data, ctxt->fields.gga_fields,
 				      GGA_FIELDS);
 
-#ifdef SHOTGUN_DEBUGGING
 	{
 		int i;
 
-		g_debug ("GGA: Got %d fields, wanted %d",
-			 field_count, GGA_FIELDS);
+		GYPSY_NOTE (NMEA, "GGA: Got %d fields, wanted %d",
+			    field_count, GGA_FIELDS);
 		for (i = 0; i < GGA_FIELDS; i++) {
-			g_debug ("[%d] - %s", i, GGA_FIELD(i));
+			GYPSY_NOTE (NMEA, "[%d] - %s", i, GGA_FIELD(i));
 		}
 	}
-#endif
 
 	if (field_count < GGA_FIELDS)
 		return FALSE;
@@ -539,17 +533,15 @@ parse_rmc (NMEAParseContext *ctxt,
 	field_count = split_sentence (data, ctxt->fields.rmc_fields,
 				      RMC_FIELDS);
 
-#ifdef SHOTGUN_DEBUGGING
 	{
 		int i;
 
-		g_debug ("RMC: Got %d fields, wanted %d",
-			 field_count, RMC_FIELDS);
+		GYPSY_NOTE (NMEA, "RMC: Got %d fields, wanted %d",
+			    field_count, RMC_FIELDS);
 		for (i = 0; i < RMC_FIELDS; i++) {
-			g_debug ("[%d] - %s", i, RMC_FIELD(i));
+			GYPSY_NOTE (NMEA, "[%d] - %s", i, RMC_FIELD(i));
 		}
 	}
-#endif
 
 	if (field_count < RMC_FIELDS)
 		return FALSE;
@@ -630,7 +622,6 @@ check_checksum (char *sentence)
 	char *s = sentence;
 	int sum = 0;
 
-/* 	g_debug ("Checking: %s", sentence); */
 	while (*s && *s != '*') {
 		sum ^= *s;
 		s++;
@@ -638,7 +629,7 @@ check_checksum (char *sentence)
 
 	if (*s == '\0') {
 		/* No checksum: return fail */
-		g_debug ("Sentence has no checksum: %s", sentence);
+		GYPSY_NOTE (NMEA, "Sentence has no checksum: %s", sentence);
 		return FALSE;
 	}
 
@@ -689,9 +680,7 @@ nmea_parse_sentence (NMEAParseContext *ctxt,
 	/* Skip the "$<TAG>," at the start to get to the data */
 	data = sentence + tag_length + 2;
 
-#ifdef SHOTGUN_DEBUGGING
- 	g_debug ("<%s> - %s", tag, data);
-#endif
+ 	GYPSY_NOTE (NMEA, "<%s> - %s", tag, data);
 
 	if (parse_tag (ctxt, tag, data) == FALSE) {
 		return FALSE;

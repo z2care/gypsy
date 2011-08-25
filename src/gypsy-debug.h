@@ -7,6 +7,8 @@ G_BEGIN_DECLS
 
 typedef enum {
     GYPSY_DEBUG_NMEA = 1 << 0,
+    GYPSY_DEBUG_SERVER = 1 << 1,
+    GYPSY_DEBUG_CLIENT = 1 << 2
 } GypsyDebugFlags;
 
 #define GYPSY_HAS_DEBUG(type) ((gypsy_debug_flags & GYPSY_DEBUG_##type) != FALSE)

@@ -53,6 +53,9 @@ char* nmea_log = NULL;
 guint gypsy_debug_flags = 0; /* global gypsy debug flag */
 static const GDebugKey gypsy_debug_keys[] = {
 	{ "nmea", GYPSY_DEBUG_NMEA },
+	{ "server", GYPSY_DEBUG_SERVER },
+	{ "client", GYPSY_DEBUG_CLIENT },
+	{ "discovery", GYPSY_DEBUG_DISCOVERY },
 };
 
 static void

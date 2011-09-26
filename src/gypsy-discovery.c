@@ -41,6 +41,7 @@
 
 #include <gudev/gudev.h>
 
+#include "gypsy-debug.h"
 #include "gypsy-discovery.h"
 
 enum {
@@ -206,7 +207,9 @@ uevent_occurred_cb (GUdevClient    *client,
                     GypsyDiscovery *discovery)
 {
         if (strcmp (action, "add") == 0) {
+		GYPSY_NOTE (DISCOVERY, "UDev add event occurred");
         } else if (strcmp (action, "remove") == 0) {
+		GYPSY_NOTE (DISCOVERY, "UDev remove event occurred");
         }
 }
 
@@ -286,11 +289,13 @@ static void
 setup_bluetooth_discovery (GypsyDiscovery *discovery)
 {
 #ifdef HAVE_BLUEZ
-        GypsyDiscoveryPrivate *priv = self->priv;
+        GypsyDiscoveryPrivate *priv = discovery->priv;
 	GError *error = NULL;
 	char *default_adapter;
 	GPtrArray *devices;
 	gboolean ret;
+
+	GYPSY_NOTE (DISCOVERY, "Bluetooth discovery enabled");
 
 	priv->connection = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
 	if (!priv->connection) {
@@ -339,7 +344,7 @@ setup_bluetooth_discovery (GypsyDiscovery *discovery)
 		return;
 	}
 
-	if (!get_positioning_devices (self, devices, &error)) {
+	if (!get_positioning_devices (discovery, devices, &error)) {
 		g_warning ("Error getting positioning devices: %s",
 			   error->message);
 		g_error_free (error);
@@ -348,11 +353,70 @@ setup_bluetooth_discovery (GypsyDiscovery *discovery)
 #endif
 }
 
+/* A list of all the product IDs we know about */
+struct ProductMap {
+	char *product_id;
+	char *product_name;
+	char *device_path;
+};
+
+/* This is a bit jury rigged really, but UDev doesn't appear to know the
+   tty devices that these devices use
+   Issues: Multiple GPS devices will appear as ttyACMn rather than always
+   as ttyACM0. */
+static struct ProductMap known_ids[] = {
+	{ "e8d/3329/100", "MTK GPS Receiver", "/dev/ttyACM0" },
+	{ "1546/1a4/100", "u-blox AG ANTARIS r4 GPS Receiver", "/dev/ttyACM0" },
+	{ NULL, NULL, NULL }
+};
+
+static void
+add_known_udev_devices (GypsyDiscovery *self)
+{
+	GypsyDiscoveryPrivate *priv = self->priv;
+	GList *udev_devices = NULL, *l;
+
+	udev_devices = g_udev_client_query_by_subsystem (priv->client, "usb");
+	for (l = udev_devices; l; l = l->next) {
+		GUdevDevice *device = l->data;
+		const char *property_id, *property_type;
+		int i;
+
+		property_type = g_udev_device_get_property (device, "DEVTYPE");
+		if (property_type == NULL ||
+		    g_str_equal (property_type, "usb_device") == FALSE) {
+			goto next_device;
+		}
+
+		property_id = g_udev_device_get_property (device, "PRODUCT");
+		if (property_id == NULL) {
+			goto next_device;
+		}
+
+		for (i = 0; known_ids[i].product_id; i++) {
+			if (g_str_equal (property_id,
+					 known_ids[i].product_id)) {
+				GYPSY_NOTE (DISCOVERY, "Found %s - %s",
+					    known_ids[i].product_name,
+					    known_ids[i].device_path);
+				g_ptr_array_add (priv->known_devices,
+						 g_strdup (known_ids[i].device_path));
+				goto next_device;
+			}
+		}
+
+	  next_device:
+		g_object_unref (device);
+	}
+
+	g_list_free (udev_devices);
+}
+
 static void
 gypsy_discovery_init (GypsyDiscovery *self)
 {
         GypsyDiscoveryPrivate *priv = GET_PRIVATE (self);
-        const char * const subsystems[] = { "" };
+        const char * const subsystems[] = { "usb" };
 
         self->priv = priv;
 
@@ -362,7 +426,7 @@ gypsy_discovery_init (GypsyDiscovery *self)
         g_signal_connect (priv->client, "uevent",
                           G_CALLBACK (uevent_occurred_cb), self);
 
-	/* FIXME: Get devices UDev knows about */
+	add_known_udev_devices (self);
 
 	setup_bluetooth_discovery (self);
 }
@@ -375,10 +439,13 @@ gypsy_discovery_list_devices (GypsyDiscovery  *discovery,
 	GypsyDiscoveryPrivate *priv = discovery->priv;
 	int i;
 
-	*devices = g_new (char *, priv->known_devices->len);
+	*devices = g_new (char *, priv->known_devices->len + 1);
 	for (i = 0; i < priv->known_devices->len; i++) {
 		(*devices)[i] = g_strdup (priv->known_devices->pdata[i]);
 	}
+
+	/* NULL terminate the array */
+	(*devices)[i] = NULL;
 
         return TRUE;
 }

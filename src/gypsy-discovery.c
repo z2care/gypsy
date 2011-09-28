@@ -135,38 +135,6 @@ gypsy_discovery_dispose (GObject *object)
         G_OBJECT_CLASS (gypsy_discovery_parent_class)->dispose (object);
 }
 
-#if 0
-static void
-gypsy_discovery_set_property (GObject      *object,
-                              guint         prop_id,
-                              const GValue *value,
-                              GParamSpec   *pspec)
-{
-        GypsyDiscovery *self = (GypsyDiscovery *) object;
-
-        switch (prop_id) {
-
-        default:
-                break;
-        }
-}
-
-static void
-gypsy_discovery_get_property (GObject    *object,
-                              guint       prop_id,
-                              GValue     *value,
-                              GParamSpec *pspec)
-{
-        GypsyDiscovery *self = (GypsyDiscovery *) object;
-
-        switch (prop_id) {
-
-        default:
-                break;
-        }
-}
-#endif
-
 static void
 gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 {
@@ -174,10 +142,7 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 
         o_class->dispose = gypsy_discovery_dispose;
         o_class->finalize = gypsy_discovery_finalize;
-/*
-        o_class->set_property = gypsy_discovery_set_property;
-        o_class->get_property = gypsy_discovery_get_property;
-*/
+
         g_type_class_add_private (klass, sizeof (GypsyDiscoveryPrivate));
         dbus_g_object_type_install_info (G_TYPE_FROM_CLASS (klass),
                                          &dbus_glib_gypsy_discovery_object_info);
@@ -189,7 +154,7 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 					      0, NULL, NULL,
 					      g_cclosure_marshal_VOID__STRING,
 					      G_TYPE_NONE, 1,
-					      G_TYPE_STRV);
+					      G_TYPE_STRING);
         signals[DEVICE_REMOVED] = g_signal_new ("device-removed",
 						G_TYPE_FROM_CLASS (klass),
 						G_SIGNAL_RUN_FIRST |
@@ -197,20 +162,7 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 						0, NULL, NULL,
 						g_cclosure_marshal_VOID__STRING,
 						G_TYPE_NONE, 1,
-						G_TYPE_STRV);
-}
-
-static void
-uevent_occurred_cb (GUdevClient    *client,
-                    const char     *action,
-                    GUdevDevice    *device,
-                    GypsyDiscovery *discovery)
-{
-        if (strcmp (action, "add") == 0) {
-		GYPSY_NOTE (DISCOVERY, "UDev add event occurred");
-        } else if (strcmp (action, "remove") == 0) {
-		GYPSY_NOTE (DISCOVERY, "UDev remove event occurred");
-        }
+						G_TYPE_STRING);
 }
 
 #ifdef HAVE_BLUEZ
@@ -370,6 +322,127 @@ static struct ProductMap known_ids[] = {
 	{ NULL, NULL, NULL }
 };
 
+static const char *
+maybe_add_device (GypsyDiscovery *discovery,
+		  GUdevDevice    *device)
+{
+	GypsyDiscoveryPrivate *priv = discovery->priv;
+	const char *property_id, *property_type;
+	int i;
+
+	property_type = g_udev_device_get_property (device, "DEVTYPE");
+	if (property_type == NULL ||
+	    g_str_equal (property_type, "usb_device") == FALSE) {
+		return NULL;
+	}
+
+	property_id = g_udev_device_get_property (device, "PRODUCT");
+	if (property_id == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; known_ids[i].product_id; i++) {
+		if (g_str_equal (property_id,
+				 known_ids[i].product_id)) {
+			GYPSY_NOTE (DISCOVERY, "Found %s - %s",
+				    known_ids[i].product_name,
+				    known_ids[i].device_path);
+			g_ptr_array_add (priv->known_devices,
+					 g_strdup (known_ids[i].device_path));
+
+			return known_ids[i].device_path;
+		}
+	}
+
+	return NULL;
+}
+
+static void
+remove_string_from_array (GPtrArray  *array,
+			  const char *str)
+{
+	int i;
+
+	if (array == NULL || str == NULL) {
+		return;
+	}
+
+	for (i = 0; i < array->len; i++) {
+		if (g_str_equal (str, array->pdata[i])) {
+			g_ptr_array_remove_index (array, i);
+			return;
+		}
+	}
+}
+
+static const char *
+maybe_remove_device (GypsyDiscovery *discovery,
+		     GUdevDevice    *device)
+{
+	GypsyDiscoveryPrivate *priv = discovery->priv;
+	const char *property_id, *property_type;
+	int i;
+
+	property_type = g_udev_device_get_property (device, "DEVTYPE");
+	if (property_type == NULL ||
+	    g_str_equal (property_type, "usb_device") == FALSE) {
+		return NULL;
+	}
+
+	property_id = g_udev_device_get_property (device, "PRODUCT");
+	if (property_id == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; known_ids[i].product_id; i++) {
+		if (g_str_equal (property_id,
+				 known_ids[i].product_id)) {
+			GYPSY_NOTE (DISCOVERY, "Found %s - %s",
+				    known_ids[i].product_name,
+				    known_ids[i].device_path);
+			remove_string_from_array (priv->known_devices,
+						  known_ids[i].device_path);
+
+			return known_ids[i].device_path;
+		}
+	}
+
+	return NULL;
+}
+
+static void
+uevent_occurred_cb (GUdevClient    *client,
+                    const char     *action,
+                    GUdevDevice    *device,
+                    GypsyDiscovery *discovery)
+{
+        if (strcmp (action, "add") == 0) {
+		const char *path;
+
+		GYPSY_NOTE (DISCOVERY, "UDev add event occurred");
+		path = maybe_add_device (discovery, device);
+		if (path == NULL) {
+			GYPSY_NOTE (DISCOVERY, "Was not a known GPS device");
+			return;
+		}
+
+		GYPSY_NOTE (DISCOVERY, "Was a known GPS device at %s", path);
+		g_signal_emit (discovery, signals[DEVICE_ADDED], 0, path);
+        } else if (strcmp (action, "remove") == 0) {
+		const char *path;
+
+		GYPSY_NOTE (DISCOVERY, "UDev remove event occurred");
+		path = maybe_remove_device (discovery, device);
+		if (path == NULL) {
+			GYPSY_NOTE (DISCOVERY, "Was not a known GPS device");
+			return;
+		}
+
+		GYPSY_NOTE (DISCOVERY, "Was a known GPS device at %s", path);
+		g_signal_emit (discovery, signals[DEVICE_REMOVED], 0, path);
+        }
+}
+
 static void
 add_known_udev_devices (GypsyDiscovery *self)
 {
@@ -379,33 +452,8 @@ add_known_udev_devices (GypsyDiscovery *self)
 	udev_devices = g_udev_client_query_by_subsystem (priv->client, "usb");
 	for (l = udev_devices; l; l = l->next) {
 		GUdevDevice *device = l->data;
-		const char *property_id, *property_type;
-		int i;
 
-		property_type = g_udev_device_get_property (device, "DEVTYPE");
-		if (property_type == NULL ||
-		    g_str_equal (property_type, "usb_device") == FALSE) {
-			goto next_device;
-		}
-
-		property_id = g_udev_device_get_property (device, "PRODUCT");
-		if (property_id == NULL) {
-			goto next_device;
-		}
-
-		for (i = 0; known_ids[i].product_id; i++) {
-			if (g_str_equal (property_id,
-					 known_ids[i].product_id)) {
-				GYPSY_NOTE (DISCOVERY, "Found %s - %s",
-					    known_ids[i].product_name,
-					    known_ids[i].device_path);
-				g_ptr_array_add (priv->known_devices,
-						 g_strdup (known_ids[i].device_path));
-				goto next_device;
-			}
-		}
-
-	  next_device:
+		maybe_add_device (self, device);
 		g_object_unref (device);
 	}
 
@@ -420,7 +468,7 @@ gypsy_discovery_init (GypsyDiscovery *self)
 
         self->priv = priv;
 
-	priv->known_devices = g_ptr_array_new ();
+	priv->known_devices = g_ptr_array_new_with_free_func (g_free);
 
         priv->client = g_udev_client_new (subsystems);
         g_signal_connect (priv->client, "uevent",

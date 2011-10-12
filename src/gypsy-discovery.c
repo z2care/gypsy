@@ -309,17 +309,12 @@ setup_bluetooth_discovery (GypsyDiscovery *discovery)
 struct ProductMap {
 	char *product_id;
 	char *product_name;
-	char *device_path;
 };
 
-/* This is a bit jury rigged really, but UDev doesn't appear to know the
-   tty devices that these devices use
-   Issues: Multiple GPS devices will appear as ttyACMn rather than always
-   as ttyACM0. */
 static struct ProductMap known_ids[] = {
-	{ "e8d/3329/100", "MTK GPS Receiver", "/dev/ttyACM0" },
-	{ "1546/1a4/100", "u-blox AG ANTARIS r4 GPS Receiver", "/dev/ttyACM0" },
-	{ NULL, NULL, NULL }
+	{ "e8d/3329/100", "MTK GPS Receiver" },
+	{ "1546/1a4/100", "u-blox AG ANTARIS r4 GPS Receiver" },
+	{ NULL, NULL }
 };
 
 static const char *
@@ -327,16 +322,32 @@ maybe_add_device (GypsyDiscovery *discovery,
 		  GUdevDevice    *device)
 {
 	GypsyDiscoveryPrivate *priv = discovery->priv;
-	const char *property_id, *property_type;
+	GUdevDevice *parent;
+	const char *property_id, *property_type, *name;
 	int i;
 
-	property_type = g_udev_device_get_property (device, "DEVTYPE");
+	name = g_udev_device_get_device_file (device);
+	if (name == NULL) {
+		return NULL;
+	}
+
+	/* Get USB interface */
+	parent = g_udev_device_get_parent (device);
+	if (parent == NULL)
+		return NULL;
+
+	/* Get USB device */
+	parent = g_udev_device_get_parent (parent);
+	if (parent == NULL)
+		return NULL;
+
+	property_type = g_udev_device_get_property (parent, "DEVTYPE");
 	if (property_type == NULL ||
 	    g_str_equal (property_type, "usb_device") == FALSE) {
 		return NULL;
 	}
 
-	property_id = g_udev_device_get_property (device, "PRODUCT");
+	property_id = g_udev_device_get_property (parent, "PRODUCT");
 	if (property_id == NULL) {
 		return NULL;
 	}
@@ -346,11 +357,11 @@ maybe_add_device (GypsyDiscovery *discovery,
 				 known_ids[i].product_id)) {
 			GYPSY_NOTE (DISCOVERY, "Found %s - %s",
 				    known_ids[i].product_name,
-				    known_ids[i].device_path);
+				    name);
 			g_ptr_array_add (priv->known_devices,
-					 g_strdup (known_ids[i].device_path));
+					 g_strdup (name));
 
-			return known_ids[i].device_path;
+			return name;
 		}
 	}
 
@@ -380,16 +391,37 @@ maybe_remove_device (GypsyDiscovery *discovery,
 		     GUdevDevice    *device)
 {
 	GypsyDiscoveryPrivate *priv = discovery->priv;
-	const char *property_id, *property_type;
+	const char *property_id, *property_type, *name;
+	GUdevDevice *parent;
 	int i;
 
-	property_type = g_udev_device_get_property (device, "DEVTYPE");
+	name = g_udev_device_get_device_file (device);
+	if (name == NULL) {
+		return NULL;
+	}
+
+	/* Get tty device */
+	parent = g_udev_device_get_parent (device);
+	if (parent == NULL)
+		return NULL;
+
+	/* Get USB interface */
+	parent = g_udev_device_get_parent (parent);
+	if (parent == NULL)
+		return NULL;
+
+	/* Get USB device */
+	parent = g_udev_device_get_parent (parent);
+	if (parent == NULL)
+		return NULL;
+
+	property_type = g_udev_device_get_property (parent, "DEVTYPE");
 	if (property_type == NULL ||
 	    g_str_equal (property_type, "usb_device") == FALSE) {
 		return NULL;
 	}
 
-	property_id = g_udev_device_get_property (device, "PRODUCT");
+	property_id = g_udev_device_get_property (parent, "PRODUCT");
 	if (property_id == NULL) {
 		return NULL;
 	}
@@ -399,11 +431,11 @@ maybe_remove_device (GypsyDiscovery *discovery,
 				 known_ids[i].product_id)) {
 			GYPSY_NOTE (DISCOVERY, "Found %s - %s",
 				    known_ids[i].product_name,
-				    known_ids[i].device_path);
+				    name);
 			remove_string_from_array (priv->known_devices,
-						  known_ids[i].device_path);
+						  name);
 
-			return known_ids[i].device_path;
+			return name;
 		}
 	}
 
@@ -449,7 +481,7 @@ add_known_udev_devices (GypsyDiscovery *self)
 	GypsyDiscoveryPrivate *priv = self->priv;
 	GList *udev_devices = NULL, *l;
 
-	udev_devices = g_udev_client_query_by_subsystem (priv->client, "usb");
+	udev_devices = g_udev_client_query_by_subsystem (priv->client, "tty");
 	for (l = udev_devices; l; l = l->next) {
 		GUdevDevice *device = l->data;
 
@@ -464,7 +496,7 @@ static void
 gypsy_discovery_init (GypsyDiscovery *self)
 {
         GypsyDiscoveryPrivate *priv = GET_PRIVATE (self);
-        const char * const subsystems[] = { "usb" };
+        const char * const subsystems[] = { "tty" };
 
         self->priv = priv;
 

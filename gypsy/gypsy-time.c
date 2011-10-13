@@ -214,7 +214,7 @@ constructor (GType                  type,
 				     G_CALLBACK (time_changed),
 				     gps_time, NULL);
 
-	return G_OBJECT (time);
+	return G_OBJECT (gps_time);
 }
 
 static void

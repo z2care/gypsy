@@ -149,7 +149,7 @@ main (int    argc,
 
 	context = g_option_context_new ("- GPS daemon");
 	g_option_context_add_main_entries (context, entries, NULL);
-	
+
 	if (!g_option_context_parse (context, &argc, &argv, &error)) {
 #if GLIB_CHECK_VERSION(2, 14, 0)
 		char *help;
@@ -162,7 +162,7 @@ main (int    argc,
 		g_error_free (error);
 		return 1;
 	}
-	
+
 	pidfile = g_strdup (user_pidfile ? user_pidfile : DEFAULT_PID_FILE);
 
 	/* Tricky: become_daemon is FALSE by default, so unless it's TRUE
@@ -189,21 +189,21 @@ main (int    argc,
 	g_type_init ();
 
 	mainloop = g_main_loop_new (NULL, FALSE);
-	
+
 	conn = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
 	if (!conn) {
 		g_error ("Error getting bus: %s", error->message);
 		return 1;
 	}
-	
-	proxy = dbus_g_proxy_new_for_name (conn, 
+
+	proxy = dbus_g_proxy_new_for_name (conn,
 					   DBUS_SERVICE_DBUS,
 					   DBUS_PATH_DBUS,
 					   DBUS_INTERFACE_DBUS);
 	if (!org_freedesktop_DBus_request_name (proxy, GYPSY_NAME,
 						0,  &request_name_ret,
 						&error)) {
-		g_error ("Error registering D-Bus service %s: %s", 
+		g_error ("Error registering D-Bus service %s: %s",
 			 GYPSY_NAME, error->message);
 		return 1;
 	}
@@ -218,7 +218,7 @@ main (int    argc,
 			  G_CALLBACK (gypsy_terminate), NULL);
 
 	dbus_g_proxy_add_signal (proxy, "NameOwnerChanged",
-				 G_TYPE_STRING, G_TYPE_STRING, 
+				 G_TYPE_STRING, G_TYPE_STRING,
 				 G_TYPE_STRING, G_TYPE_INVALID);
 	dbus_g_proxy_connect_signal (proxy, "NameOwnerChanged",
 				     G_CALLBACK (name_owner_changed),

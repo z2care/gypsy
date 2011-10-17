@@ -127,6 +127,7 @@ main (int    argc,
 	GypsyServer *gypsy;
 	GypsyDiscovery *discovery;
 	gboolean become_daemon = FALSE;
+	gboolean auto_terminate = TRUE;
 	char *pidfile = NULL;
 	char *user_pidfile = NULL;
 	const char *env_string;
@@ -136,6 +137,7 @@ main (int    argc,
 		{ "no-daemon", 0, 0, G_OPTION_ARG_NONE, &become_daemon, "Don't become a daemon", NULL },
 		{ "pid-file", 0, 0, G_OPTION_ARG_FILENAME, &user_pidfile, "Specify the location of a PID file", "FILE" },
 		{ "gypsy-debug", 0, 0, G_OPTION_ARG_CALLBACK, gypsy_arg_debug_cb, "Gypsy debugging flags to set", "FLAGS" },
+		{ "no-auto-terminate", 0, 0, G_OPTION_ARG_NONE, &auto_terminate, "Don't terminate after last connection closes", NULL },
 		{ NULL }
 	};
 
@@ -213,7 +215,7 @@ main (int    argc,
 		return 1;
 	}
 
-	gypsy = g_object_new (GYPSY_TYPE_SERVER, NULL);
+	gypsy = gypsy_server_new (auto_terminate);
 	g_signal_connect (G_OBJECT (gypsy), "terminate",
 			  G_CALLBACK (gypsy_terminate), NULL);
 

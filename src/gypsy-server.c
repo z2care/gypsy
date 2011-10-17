@@ -46,6 +46,8 @@ enum {
 typedef struct _GypsyServerPrivate {
 	DBusGConnection *connection;
 	GHashTable *connections;
+
+	gboolean auto_terminate;
 	int client_count; /* When client_count returns to 0, 
 			     we quit the daemon after TERMINATE_TIMEOUT */
 	guint32 terminate_id;
@@ -176,7 +178,7 @@ gypsy_server_shutdown (GypsyServer           *gps,
 							 device_name));
 	} else {
 		if (--priv->client_count == 0) {
-			if (priv->terminate_id == 0) {
+			if (priv->auto_terminate && priv->terminate_id == 0) {
 				priv->terminate_id = g_timeout_add (TERMINATE_TIMEOUT,
 								    gypsy_terminate,
 								    gps);
@@ -294,4 +296,14 @@ gypsy_server_remove_clients (GypsyServer *gps,
 		g_hash_table_remove (priv->connections, prev_owner);
 	}
 }
-	
+
+GypsyServer *
+gypsy_server_new (gboolean auto_terminate)
+{
+	GypsyServer *server = g_object_new (GYPSY_TYPE_SERVER, NULL);
+	GypsyServerPrivate *priv = GET_PRIVATE (server);
+
+	priv->auto_terminate = auto_terminate;
+
+	return server;
+}

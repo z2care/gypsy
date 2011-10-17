@@ -50,7 +50,7 @@ typedef struct _GypsyServerClass {
 } GypsyServerClass;
 
 GType gypsy_server_get_type (void);
-
+GypsyServer *gypsy_server_new (gboolean auto_terminate);
 void gypsy_server_remove_clients (GypsyServer *gps,
 				  const char  *prev_owner);
 G_END_DECLS

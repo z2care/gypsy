@@ -25,6 +25,7 @@
 
 #include "gypsy-discovery.h"
 #include "gypsy-discovery-bindings.h"
+#include "gypsy-marshal.h"
 
 enum {
 	PROP_0,
@@ -134,17 +135,19 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 static void
 device_added_cb (DBusGProxy     *proxy,
                  const char     *added,
+		 const char     *type,
                  GypsyDiscovery *discovery)
 {
-	g_signal_emit (discovery, signals[DEVICE_ADDED], 0, added);
+	g_signal_emit (discovery, signals[DEVICE_ADDED], 0, added, type);
 }
 
 static void
 device_removed_cb (DBusGProxy     *proxy,
                    const char     *removed,
+		   const char     *type,
                    GypsyDiscovery *discovery)
 {
-	g_signal_emit (discovery, signals[DEVICE_REMOVED], 0, removed);
+	g_signal_emit (discovery, signals[DEVICE_REMOVED], 0, removed, type);
 }
 
 static void
@@ -162,14 +165,19 @@ gypsy_discovery_init (GypsyDiscovery *self)
 		return;
 	}
 
+	/* We register all the other marshallers in gypsy_control_init,
+	   but GypsyDiscovery can be created before GypsyControl */
+	dbus_g_object_register_marshaller (gypsy_marshal_VOID__STRING_STRING,
+					   G_TYPE_NONE, G_TYPE_STRING,
+					   G_TYPE_STRING, G_TYPE_INVALID);
 	priv->proxy = dbus_g_proxy_new_for_name (connection,
 						 GYPSY_DISCOVERY_DBUS_SERVICE,
 						 GYPSY_DISCOVERY_DBUS_PATH,
 						 GYPSY_DISCOVERY_DBUS_INTERFACE);
 	dbus_g_proxy_add_signal (priv->proxy, "DeviceAdded",
-				 G_TYPE_STRING, G_TYPE_INVALID);
+				 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
 	dbus_g_proxy_add_signal (priv->proxy, "DeviceRemoved",
-				 G_TYPE_STRING, G_TYPE_INVALID);
+				 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
 	dbus_g_proxy_connect_signal (priv->proxy, "DeviceAdded",
 				     G_CALLBACK (device_added_cb), self, NULL);
 	dbus_g_proxy_connect_signal (priv->proxy, "DeviceRemoved",
@@ -190,27 +198,49 @@ gypsy_discovery_new (void)
  *
  * Obtains the GPS devices that Gypsy knows about.
  *
- * Return value: An array of strings that give the device path or the
- * device address (for Bluetooth devices). The array is owned by the caller
- * and should be freed with g_strv_free when it is finished with.
+ * Return value: A #GPtrArray containing #GypsyDiscoveryDeviceInfo.
+ * The array is owned by the caller and should be freed with
+ * g_ptr_array_free when it is finished with.
  */
-char **
+GPtrArray *
 gypsy_discovery_list_devices (GypsyDiscovery *discovery,
                               GError        **error)
 {
 	GypsyDiscoveryPrivate *priv;
 	gboolean result;
-	char **known_devices;
+	char **devices;
+	char **types;
+	GPtrArray *known_devices;
+	int i;
 
 	g_return_val_if_fail (GYPSY_IS_DISCOVERY (discovery), NULL);
 	priv = discovery->priv;
 
 	result = org_freedesktop_Gypsy_Discovery_list_devices (priv->proxy,
-							       &known_devices,
+							       &devices,
+							       &types,
 							       error);
 	if (!result) {
 		return NULL;
 	}
+
+	known_devices = g_ptr_array_new_with_free_func
+		((GDestroyNotify) gypsy_discovery_device_info_free);
+	for (i = 0; devices[i]; i++) {
+		GypsyDiscoveryDeviceInfo *di;
+
+		di = g_slice_new (GypsyDiscoveryDeviceInfo);
+
+		/* We don't copy the data here,
+		   so we don't need to free it */
+		di->device_path = devices[i];
+		di->type = types[i];
+		g_ptr_array_add (known_devices, di);
+	}
+
+	/* We only need to free the array here, not the data */
+	g_free (devices);
+	g_free (types);
 
 	return known_devices;
 }
@@ -243,4 +273,24 @@ gypsy_discovery_stop_scanning (GypsyDiscovery *discovery,
 	result = org_freedesktop_Gypsy_Discovery_stop_scanning (priv->proxy,
 								error);
 	return result;
+}
+
+GypsyDiscoveryDeviceInfo *
+gypsy_discovery_device_info_copy (GypsyDiscoveryDeviceInfo *di)
+{
+	GypsyDiscoveryDeviceInfo *dicopy;
+
+	dicopy = g_slice_new (GypsyDiscoveryDeviceInfo);
+	dicopy->device_path = g_strdup (di->device_path);
+	dicopy->type = g_strdup (di->type);
+
+	return dicopy;
+}
+
+void
+gypsy_discovery_device_info_free (GypsyDiscoveryDeviceInfo *device_info)
+{
+	g_free (device_info->device_path);
+	g_free (device_info->type);
+	g_slice_free (GypsyDiscoveryDeviceInfo, device_info);
 }

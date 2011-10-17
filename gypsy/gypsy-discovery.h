@@ -59,6 +59,7 @@ G_BEGIN_DECLS
 typedef struct _GypsyDiscoveryPrivate GypsyDiscoveryPrivate;
 typedef struct _GypsyDiscovery      GypsyDiscovery;
 typedef struct _GypsyDiscoveryClass GypsyDiscoveryClass;
+typedef struct _GypsyDiscoveryDeviceInfo GypsyDiscoveryDeviceInfo;
 
 struct _GypsyDiscovery
 {
@@ -72,14 +73,22 @@ struct _GypsyDiscoveryClass
 	GObjectClass parent_class;
 };
 
+struct _GypsyDiscoveryDeviceInfo
+{
+	char *device_path;
+	char *type;
+};
+
 GType gypsy_discovery_get_type (void) G_GNUC_CONST;
 GypsyDiscovery *gypsy_discovery_new (void);
-char **gypsy_discovery_list_devices (GypsyDiscovery *discovery,
-				     GError        **error);
+GPtrArray *gypsy_discovery_list_devices (GypsyDiscovery *discovery,
+					 GError        **error);
 gboolean gypsy_discovery_start_scanning (GypsyDiscovery *discovery,
 					 GError        **error);
 gboolean gypsy_discovery_stop_scanning (GypsyDiscovery *discovery,
 					GError        **error);
+GypsyDiscoveryDeviceInfo *gypsy_discovery_device_info_copy (GypsyDiscoveryDeviceInfo *di);
+void gypsy_discovery_device_info_free (GypsyDiscoveryDeviceInfo *device_info);
 
 
 G_END_DECLS

@@ -18,7 +18,7 @@ main (int argc,
 {
     GypsyDiscovery *discovery;
     GError *error = NULL;
-    char **known_devices;
+    GPtrArray *known_devices;
     int i;
 
     g_type_init ();
@@ -36,9 +36,11 @@ main (int argc,
         return 0;
     }
 
-    for (i = 0; known_devices[i]; i++) {
-        g_print ("[%d] %s\n", i + 1, known_devices[i]);
+    for (i = 0; i < known_devices->len; i++) {
+        GypsyDiscoveryDeviceInfo *di = known_devices->pdata[i];
+        g_print ("[%d] %s (%s)\n", i + 1, di->device_path, di->type);
     }
 
+    g_ptr_array_free (known_devices, TRUE);
     return 0;
 }

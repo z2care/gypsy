@@ -43,6 +43,7 @@
 
 #include "gypsy-debug.h"
 #include "gypsy-discovery.h"
+#include "gypsy-marshal-internal.h"
 
 enum {
         PROP_0,
@@ -54,8 +55,15 @@ enum {
         LAST_SIGNAL,
 };
 
+typedef struct _DeviceInfo {
+	char *device_path;
+	char *type;
+} DeviceInfo;
+
 struct _GypsyDiscoveryPrivate {
         GUdevClient *client;
+
+	/* Contains DeviceInfo */
 	GPtrArray *known_devices;
 
 #ifdef HAVE_BLUEZ
@@ -87,6 +95,7 @@ static guint32 signals[LAST_SIGNAL] = {0,};
 
 static gboolean gypsy_discovery_list_devices (GypsyDiscovery  *discovery,
                                               char          ***devices,
+					      char          ***types,
                                               GError         **error);
 static gboolean gypsy_discovery_start_scanning (GypsyDiscovery *discovery,
                                                 GError        **error);
@@ -94,6 +103,30 @@ static gboolean gypsy_discovery_stop_scanning (GypsyDiscovery *discovery,
                                                GError        **error);
 
 #include "gypsy-discovery-glue.h"
+
+const char *internal_type = "internal";
+const char *bluetooth_type = "bluetooth";
+const char *usb_type = "usb";
+
+static void
+device_info_free (gpointer data)
+{
+	DeviceInfo *di = (DeviceInfo *) data;
+
+	g_free (di->device_path);
+	g_slice_free (DeviceInfo, di);
+}
+
+static DeviceInfo *
+device_info_new (const char *device_path,
+		 const char *type)
+{
+	DeviceInfo *di = g_slice_new (DeviceInfo);
+	di->device_path = g_strdup (device_path);
+	di->type = (char *) type;
+
+	return di;
+}
 
 static void
 gypsy_discovery_finalize (GObject *object)
@@ -152,7 +185,7 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 					      G_SIGNAL_RUN_FIRST |
 					      G_SIGNAL_NO_RECURSE,
 					      0, NULL, NULL,
-					      g_cclosure_marshal_VOID__STRING,
+					      gypsy_marshal_VOID__STRING_STRING,
 					      G_TYPE_NONE, 1,
 					      G_TYPE_STRING);
         signals[DEVICE_REMOVED] = g_signal_new ("device-removed",
@@ -160,7 +193,7 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 						G_SIGNAL_RUN_FIRST |
 						G_SIGNAL_NO_RECURSE,
 						0, NULL, NULL,
-						g_cclosure_marshal_VOID__STRING,
+						gypsy_marshal_VOID__STRING_STRING,
 						G_TYPE_NONE, 1,
 						G_TYPE_STRING);
 }
@@ -227,7 +260,8 @@ get_positioning_devices (GypsyDiscovery *discovery,
 		}
 
 		g_ptr_array_add (priv->known_devices,
-				 g_value_dup_string (path));
+				 device_info_new (g_value_get_string (path),
+						  bluetooth_type));
 
 		g_object_unref (proxy);
 		g_hash_table_destroy (properties);
@@ -359,7 +393,7 @@ maybe_add_device (GypsyDiscovery *discovery,
 				    known_ids[i].product_name,
 				    name);
 			g_ptr_array_add (priv->known_devices,
-					 g_strdup (name));
+					 device_info_new (name, usb_type));
 
 			return name;
 		}
@@ -500,7 +534,7 @@ gypsy_discovery_init (GypsyDiscovery *self)
 
         self->priv = priv;
 
-	priv->known_devices = g_ptr_array_new_with_free_func (g_free);
+	priv->known_devices = g_ptr_array_new_with_free_func (device_info_free);
 
         priv->client = g_udev_client_new (subsystems);
         g_signal_connect (priv->client, "uevent",
@@ -514,18 +548,24 @@ gypsy_discovery_init (GypsyDiscovery *self)
 static gboolean
 gypsy_discovery_list_devices (GypsyDiscovery  *discovery,
                               char          ***devices,
+			      char          ***types,
                               GError         **error)
 {
 	GypsyDiscoveryPrivate *priv = discovery->priv;
 	int i;
 
 	*devices = g_new (char *, priv->known_devices->len + 1);
+	*types = g_new (char *, priv->known_devices->len + 1);
 	for (i = 0; i < priv->known_devices->len; i++) {
-		(*devices)[i] = g_strdup (priv->known_devices->pdata[i]);
+		DeviceInfo *di = priv->known_devices->pdata[i];
+
+		(*devices)[i] = g_strdup (di->device_path);
+		(*types)[i] = g_strdup (di->type);
 	}
 
-	/* NULL terminate the array */
+	/* NULL terminate the arrays */
 	(*devices)[i] = NULL;
+	(*types)[i] = NULL;
 
         return TRUE;
 }

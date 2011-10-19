@@ -347,7 +347,9 @@ struct ProductMap {
 
 static struct ProductMap known_ids[] = {
 	{ "e8d/3329/100", "MTK GPS Receiver" },
+	{ "0e8d/3329/0100", "MTK GPS Receiver" },
 	{ "1546/1a4/100", "u-blox AG ANTARIS r4 GPS Receiver" },
+	{ "1546/01a4/0100", "u-blox AG ANTARIS r4 GPS Receiver" },
 	{ NULL, NULL }
 };
 
@@ -365,20 +367,18 @@ maybe_add_device (GypsyDiscovery *discovery,
 		return NULL;
 	}
 
-	/* Get USB interface */
+	/* Find the usb device that owns this TTY */
 	parent = g_udev_device_get_parent (device);
-	if (parent == NULL)
-		return NULL;
+	while (parent) {
+		property_type = g_udev_device_get_property (parent, "DEVTYPE");
 
-	/* Get USB device */
-	parent = g_udev_device_get_parent (parent);
-	if (parent == NULL)
-		return NULL;
+		GYPSY_NOTE (DISCOVERY, "Found UDev type: %s", property_type);
+		if (property_type &&
+		    g_str_equal (property_type, "usb_device")) {
+			break;
+		}
 
-	property_type = g_udev_device_get_property (parent, "DEVTYPE");
-	if (property_type == NULL ||
-	    g_str_equal (property_type, "usb_device") == FALSE) {
-		return NULL;
+		parent = g_udev_device_get_parent (parent);
 	}
 
 	property_id = g_udev_device_get_property (parent, "PRODUCT");
@@ -420,12 +420,31 @@ remove_string_from_array (GPtrArray  *array,
 	}
 }
 
+static char *
+build_product_id_from_tty (GUdevDevice *tty)
+{
+	const char *vendor_id, *model_id, *revision_id;
+
+	vendor_id = g_udev_device_get_property (tty, "ID_VENDOR_ID");
+	model_id = g_udev_device_get_property (tty, "ID_MODEL_ID");
+	revision_id = g_udev_device_get_property (tty, "ID_REVISION");
+
+	if (vendor_id == NULL || model_id == NULL || revision_id == NULL) {
+		GYPSY_NOTE (DISCOVERY, "Missing property %s %s %s",
+			    vendor_id, model_id, revision_id);
+		return NULL;
+	}
+
+	return g_strdup_printf ("%s/%s/%s", vendor_id, model_id, revision_id);
+}
+
 static const char *
 maybe_remove_device (GypsyDiscovery *discovery,
 		     GUdevDevice    *device)
 {
 	GypsyDiscoveryPrivate *priv = discovery->priv;
 	const char *property_id, *property_type, *name;
+	char *tty_id;
 	GUdevDevice *parent;
 	int i;
 
@@ -434,32 +453,27 @@ maybe_remove_device (GypsyDiscovery *discovery,
 		return NULL;
 	}
 
-	/* Get tty device */
+	/* Find the usb device that owns this TTY */
 	parent = g_udev_device_get_parent (device);
-	if (parent == NULL)
-		return NULL;
+	while (parent) {
+		property_type = g_udev_device_get_property (parent, "DEVTYPE");
 
-	/* Get USB interface */
-	parent = g_udev_device_get_parent (parent);
-	if (parent == NULL)
-		return NULL;
+		GYPSY_NOTE (DISCOVERY, "Found UDev type: %s", property_type);
+		if (property_type &&
+		    g_str_equal (property_type, "usb_device")) {
+			break;
+		}
 
-	/* Get USB device */
-	parent = g_udev_device_get_parent (parent);
-	if (parent == NULL)
-		return NULL;
-
-	property_type = g_udev_device_get_property (parent, "DEVTYPE");
-	if (property_type == NULL ||
-	    g_str_equal (property_type, "usb_device") == FALSE) {
-		return NULL;
+		parent = g_udev_device_get_parent (parent);
 	}
 
 	property_id = g_udev_device_get_property (parent, "PRODUCT");
 	if (property_id == NULL) {
+		GYPSY_NOTE (DISCOVERY, "Product ID was NULL");
 		return NULL;
 	}
 
+	GYPSY_NOTE (DISCOVERY, "Found Product ID %s", property_id);
 	for (i = 0; known_ids[i].product_id; i++) {
 		if (g_str_equal (property_id,
 				 known_ids[i].product_id)) {
@@ -472,6 +486,33 @@ maybe_remove_device (GypsyDiscovery *discovery,
 			return name;
 		}
 	}
+
+	/* When removing a USB device, UDev seems to often (only?) give the
+	   parent of the tty as the USB port or hub rather than the device
+	   that was removed. But there may be the various components of the
+	   product ID on the tty device. Check that against the known
+	   database */
+	tty_id = build_product_id_from_tty (device);
+	if (tty_id == NULL) {
+		GYPSY_NOTE (DISCOVERY, "%s is an unknown device.", name);
+		return NULL;
+	}
+
+	GYPSY_NOTE (DISCOVERY, "Found usb_device with unknown product ID. Falling back to tty IDs: %s", tty_id);
+	for (i = 0; known_ids[i].product_id; i++) {
+		if (g_str_equal (tty_id,
+				 known_ids[i].product_id)) {
+			GYPSY_NOTE (DISCOVERY, "Found %s - %s",
+				    known_ids[i].product_name, name);
+			remove_string_from_array (priv->known_devices, name);
+			g_free (tty_id);
+
+			return name;
+		}
+	}
+
+	GYPSY_NOTE (DISCOVERY, "%s (%s)is an unknown device.", name, tty_id);
+	g_free (tty_id);
 
 	return NULL;
 }

@@ -121,15 +121,17 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 					      G_SIGNAL_RUN_FIRST |
 					      G_SIGNAL_NO_RECURSE,
 					      0, NULL, NULL,
-					      g_cclosure_marshal_VOID__STRING,
-					      G_TYPE_NONE, 1, G_TYPE_STRING);
+					      gypsy_marshal_VOID__STRING_STRING,
+					      G_TYPE_NONE, 2,
+					      G_TYPE_STRING, G_TYPE_STRING);
 	signals[DEVICE_REMOVED] = g_signal_new ("device-removed",
 						G_TYPE_FROM_CLASS (klass),
 						G_SIGNAL_RUN_FIRST |
 						G_SIGNAL_NO_RECURSE,
 						0, NULL, NULL,
-						g_cclosure_marshal_VOID__STRING,
-						G_TYPE_NONE, 1, G_TYPE_STRING);
+						gypsy_marshal_VOID__STRING_STRING,
+						G_TYPE_NONE, 2,
+						G_TYPE_STRING, G_TYPE_STRING);
 }
 
 static void

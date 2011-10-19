@@ -177,16 +177,14 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
         o_class->finalize = gypsy_discovery_finalize;
 
         g_type_class_add_private (klass, sizeof (GypsyDiscoveryPrivate));
-        dbus_g_object_type_install_info (G_TYPE_FROM_CLASS (klass),
-                                         &dbus_glib_gypsy_discovery_object_info);
-
         signals[DEVICE_ADDED] = g_signal_new ("device-added",
 					      G_TYPE_FROM_CLASS (klass),
 					      G_SIGNAL_RUN_FIRST |
 					      G_SIGNAL_NO_RECURSE,
 					      0, NULL, NULL,
 					      gypsy_marshal_VOID__STRING_STRING,
-					      G_TYPE_NONE, 1,
+					      G_TYPE_NONE, 2,
+					      G_TYPE_STRING,
 					      G_TYPE_STRING);
         signals[DEVICE_REMOVED] = g_signal_new ("device-removed",
 						G_TYPE_FROM_CLASS (klass),
@@ -194,8 +192,11 @@ gypsy_discovery_class_init (GypsyDiscoveryClass *klass)
 						G_SIGNAL_NO_RECURSE,
 						0, NULL, NULL,
 						gypsy_marshal_VOID__STRING_STRING,
-						G_TYPE_NONE, 1,
+						G_TYPE_NONE, 2,
+						G_TYPE_STRING,
 						G_TYPE_STRING);
+        dbus_g_object_type_install_info (G_TYPE_FROM_CLASS (klass),
+                                         &dbus_glib_gypsy_discovery_object_info);
 }
 
 #ifdef HAVE_BLUEZ
@@ -403,17 +404,21 @@ maybe_add_device (GypsyDiscovery *discovery,
 }
 
 static void
-remove_string_from_array (GPtrArray  *array,
-			  const char *str)
+remove_device_from_array (GPtrArray  *array,
+			  const char *device_path)
 {
 	int i;
 
-	if (array == NULL || str == NULL) {
+	if (array == NULL || device_path == NULL) {
 		return;
 	}
 
 	for (i = 0; i < array->len; i++) {
-		if (g_str_equal (str, array->pdata[i])) {
+		DeviceInfo *di = array->pdata[i];
+
+		GYPSY_NOTE (DISCOVERY, "Comparing %s -> %s", device_path,
+			    di->device_path);
+		if (g_str_equal (device_path, di->device_path)) {
 			g_ptr_array_remove_index (array, i);
 			return;
 		}
@@ -480,7 +485,7 @@ maybe_remove_device (GypsyDiscovery *discovery,
 			GYPSY_NOTE (DISCOVERY, "Found %s - %s",
 				    known_ids[i].product_name,
 				    name);
-			remove_string_from_array (priv->known_devices,
+			remove_device_from_array (priv->known_devices,
 						  name);
 
 			return name;
@@ -504,7 +509,7 @@ maybe_remove_device (GypsyDiscovery *discovery,
 				 known_ids[i].product_id)) {
 			GYPSY_NOTE (DISCOVERY, "Found %s - %s",
 				    known_ids[i].product_name, name);
-			remove_string_from_array (priv->known_devices, name);
+			remove_device_from_array (priv->known_devices, name);
 			g_free (tty_id);
 
 			return name;
@@ -534,7 +539,7 @@ uevent_occurred_cb (GUdevClient    *client,
 		}
 
 		GYPSY_NOTE (DISCOVERY, "Was a known GPS device at %s", path);
-		g_signal_emit (discovery, signals[DEVICE_ADDED], 0, path);
+		g_signal_emit (discovery, signals[DEVICE_ADDED], 0, path, "usb");
         } else if (strcmp (action, "remove") == 0) {
 		const char *path;
 
@@ -546,7 +551,7 @@ uevent_occurred_cb (GUdevClient    *client,
 		}
 
 		GYPSY_NOTE (DISCOVERY, "Was a known GPS device at %s", path);
-		g_signal_emit (discovery, signals[DEVICE_REMOVED], 0, path);
+		g_signal_emit (discovery, signals[DEVICE_REMOVED], 0, path, "usb");
         }
 }
 

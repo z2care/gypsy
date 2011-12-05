@@ -278,7 +278,6 @@ gps_channel_input (GIOChannel  *channel,
 	GIOStatus status;
 	char *buf;
 	gsize chars_left_in_buffer, chars_read;
-	GError *error = NULL;
 
 	priv = GET_PRIVATE (userdata);
 
@@ -298,7 +297,6 @@ gps_channel_input (GIOChannel  *channel,
 		gypsy_parser_received_data (priv->parser, chars_read, NULL);
 	} else {
 		GYPSY_NOTE (CLIENT, "Read error: %s", g_strerror (errno));
-		g_set_error (&error, GYPSY_ERROR, errno, g_strerror (errno));
 	}
 
 	return TRUE;

@@ -220,19 +220,21 @@ shutdown_connection (GypsyClient *client)
 		priv->input_id = 0;
 	}
 
-	if (priv->fd > 0) {
-		close (priv->fd);
-		priv->fd = -1;
-	}
-
 	if (priv->channel) {
+		g_io_channel_shutdown (priv->channel, TRUE, NULL);
 		g_io_channel_unref (priv->channel);
 		priv->channel = NULL;
 	}
 
 	if (priv->debug_log) {
+		g_io_channel_shutdown (priv->channel, TRUE, NULL);
 		g_io_channel_unref (priv->debug_log);
 		priv->debug_log = NULL;
+	}
+
+	if (priv->fd > 0) {
+		close (priv->fd);
+		priv->fd = -1;
 	}
 
 	if (priv->parser) {
@@ -278,6 +280,7 @@ gps_channel_input (GIOChannel  *channel,
 	GIOStatus status;
 	char *buf;
 	gsize chars_left_in_buffer, chars_read;
+	GError *error = NULL;
 
 	priv = GET_PRIVATE (userdata);
 
@@ -286,8 +289,7 @@ gps_channel_input (GIOChannel  *channel,
 					  (char *) buf,
 					  chars_left_in_buffer,
 					  &chars_read,
-					  NULL);
-
+					  &error);
 	if (priv->debug_log) {
 		g_io_channel_write_chars (priv->debug_log, buf,
 					  chars_read, NULL, NULL);
@@ -296,7 +298,8 @@ gps_channel_input (GIOChannel  *channel,
 	if (status == G_IO_STATUS_NORMAL) {
 		gypsy_parser_received_data (priv->parser, chars_read, NULL);
 	} else {
-		GYPSY_NOTE (CLIENT, "Read error: %s", g_strerror (errno));
+		GYPSY_NOTE (CLIENT, "Read error on channel %p %d: %s (%s)", priv->channel, status, error->message, g_strerror (errno));
+		g_error_free (error);
 	}
 
 	return TRUE;
@@ -587,7 +590,7 @@ gypsy_client_start (GypsyClient *client,
 		} else {
 			priv->type = GYPSY_DEVICE_TYPE_FIFO;
 		}
-		priv->fd = open (priv->device_path, O_RDWR | O_NOCTTY | O_NONBLOCK);
+
 		if (priv->fd == -1) {
 			g_warning ("Error opening device %s: %s", priv->device_path, g_strerror (errno));
 			g_set_error (error, GYPSY_ERROR, errno, g_strerror (errno));
@@ -642,6 +645,7 @@ gypsy_client_start (GypsyClient *client,
 	/* Set up the IO Channel */
 
 	priv->channel = g_io_channel_unix_new (priv->fd);
+	GYPSY_NOTE (CLIENT, "Created new channel: %p", priv->channel);
 
 	status = g_io_channel_set_flags (priv->channel,
 					 G_IO_FLAG_NONBLOCK | G_IO_FLAG_IS_READABLE | G_IO_FLAG_IS_WRITEABLE,

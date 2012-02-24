@@ -77,6 +77,10 @@
  * </informalexample>
  */
 
+/* DBus-glib uses GValueArrays which are deprecated, so we need to
+ * disable the warnings so that -Werror doesn't cry */
+#define GLIB_DISABLE_DEPRECATION_WARNINGS 1
+
 #include <glib-object.h>
 
 #include <gypsy/gypsy-satellite.h>

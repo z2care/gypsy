@@ -191,15 +191,15 @@ make_satellite_array (GPtrArray *sats)
 	
 	for (i = 0; i < sats->len; i++) {
 		GypsySatelliteDetails *details;
-		GValueArray *vals = sats->pdata[i];
+		GArray *vals = sats->pdata[i];
 
 		details = g_slice_new (GypsySatelliteDetails);
 
-		details->satellite_id = g_value_get_uint (g_value_array_get_nth (vals, 0));
-		details->in_use = g_value_get_boolean (g_value_array_get_nth (vals, 1));
-		details->elevation = g_value_get_uint (g_value_array_get_nth (vals, 2));
-		details->azimuth = g_value_get_uint (g_value_array_get_nth (vals, 3));
-		details->snr = g_value_get_uint (g_value_array_get_nth (vals, 4));
+		details->satellite_id = g_array_index(vals,guint,0);
+		details->in_use = g_array_index(vals,gboolean,1);
+		details->elevation = g_array_index(vals,guint,2);
+		details->azimuth = g_array_index(vals,guint,3);
+		details->snr = g_array_index(vals,guint,4);
 
 		g_ptr_array_add (satellites, details);
 	}

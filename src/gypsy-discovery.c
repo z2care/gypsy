@@ -382,6 +382,10 @@ maybe_add_device (GypsyDiscovery *discovery,
 		parent = g_udev_device_get_parent (parent);
 	}
 
+	if (parent == NULL) {
+		return NULL;
+	}
+
 	property_id = g_udev_device_get_property (parent, "PRODUCT");
 	if (property_id == NULL) {
 		return NULL;
@@ -576,7 +580,7 @@ static void
 gypsy_discovery_init (GypsyDiscovery *self)
 {
         GypsyDiscoveryPrivate *priv = GET_PRIVATE (self);
-        const char * const subsystems[] = { "tty" };
+        const char * const subsystems[] = { "tty", NULL };
 
         self->priv = priv;
 

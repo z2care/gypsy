@@ -147,6 +147,10 @@ gypsy_nmea_parser_get_buffer (GypsyParser *parser,
     GypsyNmeaParser *nmea = GYPSY_NMEA_PARSER (parser);
     GypsyNmeaParserPrivate *priv = nmea->priv;
 
+    if (priv->chars_in_buffer >= READ_BUFFER_SIZE) {
+        priv->chars_in_buffer = 0;
+    }
+
     *buffer = (priv->buffer + priv->chars_in_buffer);
     return READ_BUFFER_SIZE - priv->chars_in_buffer;
 }

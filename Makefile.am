@@ -1,4 +1,4 @@
-SUBDIRS = interfaces src gypsy examples docs
+SUBDIRS = interfaces src gypsy examples docs etc
 ACLOCAL_AMFLAGS = -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig

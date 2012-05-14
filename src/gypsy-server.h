@@ -37,6 +37,7 @@ G_BEGIN_DECLS
 
 typedef enum {
 	GYPSY_SERVER_ERROR_NO_CLIENT,
+	GYPSY_SERVER_ERROR_BAD_PATH
 } GypsyServerError;
 
 typedef struct _GypsyServer {

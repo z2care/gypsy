@@ -45,6 +45,8 @@ DBUS_SYS_DIR="${sysconfdir}/dbus-1/system.d"
 AC_SUBST(DBUS_SYS_DIR)
 AC_DEFINE_UNQUOTED(DBUS_SYS_DIR, "$DBUS_SYS_DIR", [Where the system dir for D-Bus is])
 
+AC_DEFINE_UNQUOTED(CONFIG_FILE_PATH, "${sysconfdir}/gypsy.conf", [The absolute path of the config file])
+
 DBUS_SERVICES_DIR="${datadir}/dbus-1/system-services"
 AC_SUBST(DBUS_SERVICES_DIR)
 AC_DEFINE_UNQUOTED(DBUS_SERVICES_DIR, "$DBUS_SERVICES_DIR", [Where services dir for D-Bus is])
@@ -74,6 +76,7 @@ docs/Makefile
 docs/reference/Makefile
 docs/reference/version.xml
 docs/tools/Makefile
+etc/Makefile
 gypsy.pc
 ])
 

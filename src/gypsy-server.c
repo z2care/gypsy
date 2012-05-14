@@ -28,11 +28,16 @@
 /*
  * GypsyServer - The main control object that creates GPS connection objects.
  */
+#include "config.h"
 #include <glib.h>
 
 #include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-bindings.h>
 #include <dbus/dbus-glib-lowlevel.h>
+
+#ifdef HAVE_BLUEZ
+#include <bluetooth/bluetooth.h>
+#endif
 
 #include "gypsy-server.h"
 #include "gypsy-debug.h"
@@ -51,6 +56,9 @@ typedef struct _GypsyServerPrivate {
 	int client_count; /* When client_count returns to 0, 
 			     we quit the daemon after TERMINATE_TIMEOUT */
 	guint32 terminate_id;
+
+	gchar **allowed_device_globs;
+	gsize allowed_device_glob_count;
 } GypsyServerPrivate;
 
 static guint32 signals[LAST_SIGNAL] = {0, };
@@ -61,6 +69,9 @@ G_DEFINE_TYPE (GypsyServer, gypsy_server, G_TYPE_OBJECT);
 
 #define GYPSY_GPS_PATH "/org/freedesktop/Gypsy/"
 #define TERMINATE_TIMEOUT 10000 /* 10 second timeout */
+
+#define GYPSY_CONF_GROUP "gypsy"
+#define GYPSY_CONF_GLOB_KEY "AllowedDeviceGlobs"
 
 static void gypsy_server_create (GypsyServer            *gps,
 				 const char             *IN_device_path,
@@ -104,6 +115,8 @@ gypsy_server_create (GypsyServer           *gps,
 	GypsyClient *client;
 	char *path, *device_name, *sender;
 	GList *list;
+	int i;
+	gboolean allowed;
 
 	priv = GET_PRIVATE (gps);
 
@@ -115,6 +128,40 @@ gypsy_server_create (GypsyServer           *gps,
 	}
 
 	GYPSY_NOTE (SERVER, "Creating client for %s", IN_device_path);
+
+	/* compare priv->device_path to allowed globs
+	 * if not allowed, error out */
+	allowed = FALSE;
+	for (i = 0; i < priv->allowed_device_glob_count; i++) {
+		if (g_str_equal (priv->allowed_device_globs[i], "bluetooth")) {
+#ifdef HAVE_BLUEZ
+			if (bachk (IN_device_path) == 0) {
+				allowed = TRUE;
+				break;
+			}
+#else
+			continue;
+#endif /* HAVE_BLUEZ */
+		}
+		if (g_pattern_match_simple (priv->allowed_device_globs[i],
+					    IN_device_path)) {
+			allowed = TRUE;
+			break;
+		}
+	}
+	if (allowed == FALSE) {
+		g_warning ("The device path %s is not allowed by config file",
+			   IN_device_path);
+		GError *error = NULL;
+		error = g_error_new (GYPSY_SERVER_ERROR,
+				     GYPSY_SERVER_ERROR_BAD_PATH,
+				     "Bad path: %s",
+				     IN_device_path);
+		dbus_g_method_return_error (context, error);
+		g_error_free (error);
+		return;
+	}
+
 	device_name = g_path_get_basename (IN_device_path);
 	GYPSY_NOTE (SERVER, "Device name: %s", device_name);
 	path = g_strdup_printf ("%s%s", GYPSY_GPS_PATH, 
@@ -252,6 +299,7 @@ gypsy_server_init (GypsyServer *gps)
 {
 	GypsyServerPrivate *priv = GET_PRIVATE (gps);
 	GError *error = NULL;
+	GKeyFile *key_file = NULL;
 
 	priv->connection = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
 	if (priv->connection == NULL) {
@@ -267,6 +315,27 @@ gypsy_server_init (GypsyServer *gps)
 
 	priv->client_count = 0;
 	priv->terminate_id = 0;
+
+	key_file = g_key_file_new();
+	if (!g_key_file_load_from_file (key_file, CONFIG_FILE_PATH,
+				       G_KEY_FILE_NONE, &error))
+		goto error;
+
+	priv->allowed_device_globs = g_key_file_get_string_list (key_file,
+								 GYPSY_CONF_GROUP,
+								 GYPSY_CONF_GLOB_KEY,
+								 &(priv->allowed_device_glob_count),
+								 &error);
+	if (!priv->allowed_device_globs)
+		goto error;
+
+	return;
+
+error:
+	g_warning ("Error parsing config file:\n%s",
+		   error->message);
+	g_error_free (error);
+	g_key_file_free (key_file);
 }
 
 void

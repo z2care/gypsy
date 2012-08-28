@@ -9,12 +9,12 @@
     <method name="StartScanning"/>
     <method name="StopScanning"/>
     <signal name="DeviceAdded">
-      <arg type="s" name="added"/>
-      <arg type="s" name="type"/>
+      <arg type="s" name="added" direction="out"/>
+      <arg type="s" name="type" direction="out"/>
     </signal>
     <signal name="DeviceRemoved">
-      <arg type="s" name="removed"/>
-      <arg type="s" name="type"/>
+      <arg type="s" name="removed" direction="out"/>
+      <arg type="s" name="type" direction="out"/>
     </signal>
   </interface>
 </node>

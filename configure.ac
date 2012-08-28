@@ -2,7 +2,7 @@ AC_PREREQ(2.59)
 AC_INIT(gypsy, 0.9, http://gypsy.freedesktop.org)
 
 AC_CONFIG_SRCDIR(src/main.c)
-AM_INIT_AUTOMAKE([1.9 foreign])
+AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2])
 AM_CONFIG_HEADER(config.h)
 
 AC_CONFIG_MACRO_DIR([m4])
